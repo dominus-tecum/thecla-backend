@@ -30,6 +30,11 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 app = FastAPI()
 
+# ✅ ADD ROOT ENDPOINT HERE
+@app.get("/")
+def read_root():
+    return {"message": "TheclaMed API is running!", "status": "healthy"}
+
 # ✅ SECURITY CONFIGURATION
 SECRET_KEY = "your-super-secret-key-change-this-in-production-12345"
 ALGORITHM = "HS256"
@@ -239,7 +244,7 @@ def get_specialist_types():
 # NEW: VALIDATION FUNCTIONS
 def validate_email(email: str) -> bool:
     """Validate email format"""
-    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0.9.-]+\.[a-zA-Z]{2,}$'
     return re.match(email_pattern, email) is not None
 
 def validate_phone_number(phone: str) -> bool:
@@ -865,14 +870,3 @@ if __name__ == "__main__":
     
     # Run the app - "0.0.0.0" means accept connections from anywhere
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
-
-
-
-
-
-
-
-
-
