@@ -858,15 +858,3 @@ def unrelease_exam(exam_id: str, db: Session = Depends(get_db)):
     exam.is_released = False
     db.commit()
     return {"msg": f"Exam '{exam.title}' recalled", "is_released": False}
-
-
-if __name__ == "__main__":
-    import os
-    import uvicorn
-    
-    # Get PORT from environment variable (Render provides this)
-    # Default to 8000 for local development
-    port = int(os.environ.get("PORT", 8000))
-    
-    # Run the app - "0.0.0.0" means accept connections from anywhere
-    uvicorn.run(app, host="0.0.0.0", port=port)
