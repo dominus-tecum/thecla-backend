@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "39d558f9-477f-43cd-8386-c23a769762dc"
+      }
+    },
+    "android": {
+      "package": "com.kebula.backend"
+    }
+  }
+}

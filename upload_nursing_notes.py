@@ -150,7 +150,7 @@ def get_reading_materials_folder_path(discipline_id):
     return full_path
 
 # MAIN UPLOAD SCRIPT FOR READING MATERIALS
-API_URL = 'https://cb46ba37f2c0.ngrok-free.app/exam/'  # Singular endpoint
+API_URL = 'https://thecla-backend.onrender.com/exam/'  # Singular endpoint
 
 # NEW: Ask user which profession to upload reading materials for
 discipline_id, discipline_name = get_profession_from_user()

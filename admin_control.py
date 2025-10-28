@@ -63,7 +63,7 @@ def check_database_connection():
 # ===== RUN THE DEBUG CHECK =====
 check_database_connection()
 
-API_URL = 'https://cb46ba37f2c0.ngrok-free.app'
+API_URL = 'https://thecla-backend.onrender.com'
 
 # ===== NEW: COMPARE DATABASES FUNCTION =====
 def compare_databases():

@@ -315,7 +315,7 @@ def upload_all_exams():
     print(f"📁 Files were processed from: {folder_path}")
 
 # MAIN UPLOAD SCRIPT
-API_URL = 'https://cb46ba37f2c0.ngrok-free.app/exams/'  # Plural endpoint
+API_URL = 'https://thecla-backend.onrender.com/exams/'  # Plural endpoint
 
 def main():
     """Main menu for exam upload options"""
