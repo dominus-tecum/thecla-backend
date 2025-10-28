@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Body, Query, Request, status
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, JSON, create_engine, Boolean, Text, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, JSON, create_engine, Boolean, Text, Enum, func
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship, Session
+from sqlalchemy.sql import case
 from passlib.context import CryptContext
 from datetime import datetime
 import uvicorn
@@ -248,13 +249,27 @@ def validate_email(email: str) -> bool:
     return re.match(email_pattern, email) is not None
 
 def validate_phone_number(phone: str) -> bool:
-    """Validate international phone number format"""
-    try:
-        # Try to parse the phone number
-        parsed_number = phonenumbers.parse(phone, None)
-        return phonenumbers.is_valid_number(parsed_number)
-    except phonenumbers.NumberParseException:
+    """Validate international phone number format - ALL COUNTRIES"""
+    # Basic format check: must start with + and have digits
+    if not phone.startswith('+'):
         return False
+    
+    # Remove the + and check if the rest are digits
+    digits_only = phone[1:].replace(' ', '')  # Remove any spaces
+    
+    # Check if we have reasonable number of digits (at least country code + number)
+    if len(digits_only) < 7 or not digits_only.isdigit():
+        return False
+    
+    # Check total length (E.164 standard: max 15 digits after +)
+    if len(digits_only) > 15:
+        return False
+    
+    # Country code should start with 1-9 (not 0)
+    if digits_only[0] == '0':
+        return False
+    
+    return True
 
 def format_phone_number(phone: str) -> str:
     """Format phone number to international format"""
@@ -858,3 +873,281 @@ def unrelease_exam(exam_id: str, db: Session = Depends(get_db)):
     exam.is_released = False
     db.commit()
     return {"msg": f"Exam '{exam.title}' recalled", "is_released": False}
+
+# =============================================================================
+# NEW ADMIN ENDPOINTS - ADDED FOR COMPLETE ADMIN FUNCTIONALITY
+# =============================================================================
+
+# NEW: Exam submission endpoint
+@app.post("/exam/submit")
+def submit_exam_results(
+    exam_data: dict = Body(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Minimal exam submission endpoint"""
+    try:
+        # Get exam details
+        exam = db.query(Exam).filter(Exam.id == exam_data.get("exam_id")).first()
+        if not exam:
+            raise HTTPException(status_code=404, detail="Exam not found")
+        
+        # Store in user_activity
+        activity = log_activity(db, current_user.id, "exam_completed", {
+            "exam_id": exam_data.get("exam_id"),
+            "exam_title": exam.title,
+            "score": exam_data.get("score"),
+            "total_questions": exam_data.get("total_questions", 0),
+            "percentage": exam_data.get("score", 0),
+            "passed": exam_data.get("score", 0) >= 70,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+        return {
+            "message": "Exam results saved successfully",
+            "activity_id": activity.id,
+            "score": exam_data.get("score")
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving results: {str(e)}")
+
+# NEW: Password reset endpoint
+@app.post("/admin/users/{user_id}/reset-password")
+def admin_reset_user_password(
+    user_id: int,
+    new_password: str = Body(..., embed=True),
+    db: Session = Depends(get_db)
+):
+    """Admin endpoint to reset user password"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Hash and set new password
+    user.hashed_password = get_password_hash(new_password)
+    db.commit()
+    
+    # Log the action
+    log_activity(db, user.id, "password_reset_by_admin", {
+        "reset_by": "admin",
+        "timestamp": datetime.utcnow().isoformat()
+    })
+    
+    return {
+        "message": f"Password reset successfully for {user.email}",
+        "user_id": user.id,
+        "email": user.email
+    }
+
+# NEW: Exam results viewing
+@app.get("/admin/exam-results")
+def admin_get_all_exam_results(
+    user_id: Optional[int] = Query(None),
+    exam_id: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Admin endpoint to view all exam results with filtering"""
+    query = db.query(UserActivity).filter(UserActivity.activity_type == "exam_completed")
+    
+    if user_id:
+        query = query.filter(UserActivity.user_id == user_id)
+    
+    activities = query.order_by(UserActivity.timestamp.desc()).all()
+    
+    results = []
+    for activity in activities:
+        details = activity.details or {}
+        user = db.query(User).filter(User.id == activity.user_id).first()
+        
+        results.append({
+            "id": activity.id,
+            "user_id": activity.user_id,
+            "user_email": user.email if user else "Unknown",
+            "user_name": user.full_name if user else "Unknown",
+            "user_profession": user.profession if user else "Unknown",
+            "exam_id": details.get("exam_id", "Unknown"),
+            "exam_title": details.get("exam_title", "Unknown Exam"),
+            "score": details.get("score", 0),
+            "total_questions": details.get("total_questions", 0),
+            "percentage": details.get("percentage", 0),
+            "passed": details.get("passed", False),
+            "completed_at": activity.timestamp
+        })
+    
+    # Filter by exam_id if provided
+    if exam_id:
+        results = [r for r in results if exam_id.lower() in r["exam_id"].lower()]
+    
+    return results
+
+# NEW: User exam results
+@app.get("/admin/users/{user_id}/exam-results")
+def admin_get_user_exam_results(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """Admin endpoint to view specific user's exam results"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    activities = db.query(UserActivity).filter(
+        UserActivity.user_id == user_id,
+        UserActivity.activity_type == "exam_completed"
+    ).order_by(UserActivity.timestamp.desc()).all()
+    
+    exam_results = []
+    for activity in activities:
+        details = activity.details or {}
+        exam_results.append({
+            "exam_id": details.get("exam_id", "Unknown"),
+            "exam_title": details.get("exam_title", "Unknown Exam"),
+            "score": details.get("score", 0),
+            "total_questions": details.get("total_questions", 0),
+            "percentage": details.get("percentage", 0),
+            "passed": details.get("passed", False),
+            "completed_at": activity.timestamp
+        })
+    
+    return {
+        "user_info": {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "profession": user.profession,
+            "status": user.status
+        },
+        "exam_results": exam_results,
+        "total_exams": len(exam_results)
+    }
+
+# NEW: User impersonation
+@app.post("/admin/users/{user_id}/impersonate")
+def admin_impersonate_user(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """Admin endpoint to generate login token for any user"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if user is approved
+    if user.status != UserStatus.APPROVED:
+        raise HTTPException(status_code=400, detail="Cannot impersonate unapproved user")
+    
+    # Create access token for the target user
+    access_token_expires = timedelta(hours=24)  # Longer expiry for admin convenience
+    access_token = create_access_token(
+        data={"user_id": user.id}, expires_delta=access_token_expires
+    )
+    
+    # Log the impersonation activity
+    log_activity(db, user.id, "admin_impersonation", {
+        "impersonated_by": "admin",
+        "timestamp": datetime.utcnow().isoformat()
+    })
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "user_id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "profession": user.profession
+        },
+        "message": f"You are now logged in as {user.email}"
+    }
+
+# NEW: User activity monitoring
+@app.get("/admin/users/{user_id}/activity")
+def admin_get_user_activity(
+    user_id: int,
+    activity_type: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """Admin endpoint to view any user's complete activity"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    query = db.query(UserActivity).filter(UserActivity.user_id == user_id)
+    
+    if activity_type:
+        query = query.filter(UserActivity.activity_type == activity_type)
+    
+    activities = query.order_by(UserActivity.timestamp.desc()).limit(limit).all()
+    
+    return {
+        "user_info": {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "profession": user.profession,
+            "status": user.status
+        },
+        "activities": [
+            {
+                "activity_type": a.activity_type,
+                "timestamp": a.timestamp,
+                "details": a.details
+            }
+            for a in activities
+        ],
+        "total_activities": len(activities)
+    }
+
+# NEW: Admin dashboard
+@app.get("/admin/dashboard")
+def admin_dashboard_summary(db: Session = Depends(get_db)):
+    """Admin dashboard with overall statistics"""
+    # User statistics
+    total_users = db.query(User).count()
+    pending_users = db.query(User).filter(User.status == UserStatus.PENDING).count()
+    approved_users = db.query(User).filter(User.status == UserStatus.APPROVED).count()
+    
+    # Exam results statistics
+    exam_activities = db.query(UserActivity).filter(
+        UserActivity.activity_type == "exam_completed"
+    ).all()
+    
+    total_exams = len(exam_activities)
+    passed_exams = sum(1 for a in exam_activities if a.details and a.details.get("passed"))
+    
+    # Recent activity
+    recent_activities = db.query(UserActivity).order_by(
+        UserActivity.timestamp.desc()
+    ).limit(10).all()
+    
+    recent_activity_data = []
+    for a in recent_activities:
+        user = db.query(User).filter(User.id == a.user_id).first()
+        recent_activity_data.append({
+            "user_id": a.user_id,
+            "user_email": user.email if user else "Unknown",
+            "activity_type": a.activity_type,
+            "timestamp": a.timestamp
+        })
+    
+    return {
+        "user_stats": {
+            "total_users": total_users,
+            "pending_approval": pending_users,
+            "approved_users": approved_users
+        },
+        "exam_stats": {
+            "total_exams_taken": total_exams,
+            "passed_exams": passed_exams,
+            "failed_exams": total_exams - passed_exams,
+            "pass_rate": (passed_exams / total_exams * 100) if total_exams > 0 else 0,
+            "average_percentage": 0  # You can calculate this if needed
+        },
+        "recent_activity": recent_activity_data
+    }
+
+# Run the application
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
