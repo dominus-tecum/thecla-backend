@@ -346,6 +346,59 @@ try:
 finally:
     db.close()
 
+# =============================================================================
+# NEW PASSWORD RESET ENDPOINT - ADDED HERE
+# =============================================================================
+
+@app.post("/reset-password")
+async def reset_password(  # FIXED: Changed from 'def' to 'async def'
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Simple password reset endpoint that allows users to reset their own password
+    """
+    try:
+        data = await request.json()
+        email = data.get('email')
+        new_password = data.get('new_password')
+        
+        if not email or not new_password:
+            return {
+                "status": "error",
+                "detail": "Email and new password are required"
+            }
+        
+        # Find user by email
+        user = get_user_by_email(db, email)
+        if not user:
+            return {
+                "status": "error", 
+                "detail": "User not found with this email address"
+            }
+        
+        # Update password with the new one
+        user.hashed_password = get_password_hash(new_password)
+        db.commit()
+        
+        # Log the password reset activity
+        log_activity(db, user.id, "password_reset", {
+            "reset_by": "user",
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+        return {
+            "status": "success",
+            "detail": "Password reset successfully! You can now login with your new password."
+        }
+            
+    except Exception as e:
+        db.rollback()
+        return {
+            "status": "error",
+            "detail": f"Internal server error: {str(e)}"
+        }
+
 # ENDPOINTS - UPDATED REGISTRATION WITH VALIDATION AND DISCIPLINE SYSTEM
 
 @app.post("/register")
