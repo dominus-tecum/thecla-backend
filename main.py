@@ -460,6 +460,153 @@ def login(
         "email": user.email
     }
 
+# NEW: FORGOT PASSWORD ENDPOINTS
+@app.post("/forgot-password")
+def forgot_password(
+    email: str = Body(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Initiate password reset process for a user
+    This sends a reset email (in production) or returns reset token (for development)
+    """
+    # Find user by email
+    user = get_user_by_email(db, email)
+    
+    # Always return success even if email doesn't exist (security best practice)
+    if not user:
+        # Don't reveal whether email exists or not
+        return {
+            "message": "If an account with this email exists, password reset instructions have been sent.",
+            "status": "success"
+        }
+    
+    # Check if user is approved (only approved users can reset password)
+    if user.status != UserStatus.APPROVED:
+        return {
+            "message": "If an account with this email exists, password reset instructions have been sent.",
+            "status": "success"
+        }
+    
+    # Generate reset token (in production, this would be a secure random token)
+    reset_token = secrets.token_urlsafe(32)
+    
+    # In a real implementation, you would:
+    # 1. Store the reset token in database with expiration
+    # 2. Send email with reset link
+    # 3. Log the reset request
+    
+    # For now, we'll log the activity and return success
+    log_activity(db, user.id, "password_reset_requested", {
+        "reset_token": reset_token,  # In production, don't return this
+        "timestamp": datetime.utcnow().isoformat()
+    })
+    
+    # In development, you might want to return the token for testing
+    # In production, remove the reset_token from response
+    return {
+        "message": "If an account with this email exists, password reset instructions have been sent.",
+        "status": "success",
+        "reset_token": reset_token,  # Remove this in production
+        "user_id": user.id  # Remove this in production
+    }
+
+@app.post("/reset-password")
+def reset_password(
+    reset_token: str = Body(...),
+    new_password: str = Body(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Complete password reset process using the reset token
+    """
+    # In a real implementation, you would:
+    # 1. Verify the reset token exists and hasn't expired
+    # 2. Find the user associated with the token
+    # 3. Update the password
+    
+    # For now, we'll simulate token verification
+    # This is a simplified version - in production, you'd have a proper token storage and validation
+    
+    # Log the activity for demonstration
+    # In production, you'd actually verify the token against stored tokens
+    activity = db.query(UserActivity).filter(
+        UserActivity.activity_type == "password_reset_requested",
+        UserActivity.details.contains({"reset_token": reset_token})
+    ).first()
+    
+    if not activity:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired reset token. Please request a new password reset."
+        )
+    
+    # Get the user who requested the reset
+    user = get_user_by_id(db, activity.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid reset token. Please request a new password reset."
+        )
+    
+    # Update the user's password
+    user.hashed_password = get_password_hash(new_password)
+    db.commit()
+    
+    # Log the successful password reset
+    log_activity(db, user.id, "password_reset_successful", {
+        "reset_by": "forgot_password",
+        "timestamp": datetime.utcnow().isoformat()
+    })
+    
+    return {
+        "message": "Password reset successfully. You can now login with your new password.",
+        "status": "success",
+        "user_id": user.id,
+        "email": user.email
+    }
+
+@app.post("/simple-reset-password")
+def simple_reset_password(
+    email: str = Body(...),
+    new_password: str = Body(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Simplified password reset for development/testing
+    This bypasses email verification for development purposes
+    """
+    user = get_user_by_email(db, email)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+    
+    # Check if user is approved
+    if user.status != UserStatus.APPROVED:
+        raise HTTPException(
+            status_code=403,
+            detail="Account not approved. Please contact administrator."
+        )
+    
+    # Update password
+    user.hashed_password = get_password_hash(new_password)
+    db.commit()
+    
+    # Log the activity
+    log_activity(db, user.id, "password_reset_simple", {
+        "reset_by": "simple_reset",
+        "timestamp": datetime.utcnow().isoformat()
+    })
+    
+    return {
+        "message": "Password reset successfully. You can now login with your new password.",
+        "status": "success",
+        "user_id": user.id,
+        "email": user.email
+    }
+
 # NEW: PROFESSION INFORMATION ENDPOINTS
 @app.get("/professions")
 def get_professions():
