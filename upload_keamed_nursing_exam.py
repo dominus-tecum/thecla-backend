@@ -117,14 +117,14 @@ def get_folder_path(discipline_id):
     base_path = r'd:\Thecla\Training Examinations'
     
     folder_mapping = {
-        'gp': r'GP\Exams\Rationale',
-        'nurse': r'Nurses\Prometric Exam\Rationale',
-        'midwife': r'Midwives\Exams',
-        'lab_tech': r'Lab Technologists\Exams',
-        'physiotherapist': r'Physiotherapists\Exams',
-        'icu_nurse': r'Specialty Nurses\ICU\Exams',
-        'emergency_nurse': r'Specialty Nurses\Emergency\Exams',
-        'neonatal_nurse': r'Specialty Nurses\Neonatal\Exams'
+        'gp': r'GP\Exams\Keamed',
+        'nurse': r'Nurses\Prometric Exam\Keamed',
+        'midwife': r'Midwives\Keamed',
+        'lab_tech': r'Lab Technologists\Keamed',
+        'physiotherapist': r'Physiotherapists\Keamed',
+        'icu_nurse': r'Specialty Nurses\ICU\Keamed',
+        'emergency_nurse': r'Specialty Nurses\Emergency\keamed',
+        'neonatal_nurse': r'Specialty Nurses\Neonatal\Keamed'
     }
     
     folder = folder_mapping.get(discipline_id, 'Exams')
@@ -315,8 +315,7 @@ def upload_all_exams():
     print(f"📁 Files were processed from: {folder_path}")
 
 # MAIN UPLOAD SCRIPT
-#API_URL = 'https://thecla-backend.onrender.com/exams/'
-API_URL = 'https://77c6f0dff7e2.ngrok-free.app/exams/'
+API_URL = 'https://420f6f74b2f1.ngrok-free.app/admin/keamedexam/exams/'  # ✅ UPDATED: KeamedExam endpoint
 
 def main():
     """Main menu for exam upload options"""

@@ -29,22 +29,21 @@ def extract_reading_content_from_text(text, exam_uuid):
         if not line:
             continue
             
-        # Detect section headers (numbered items, bold text, or titles)
+        # IMPROVED: Focus on numbered subtopics for TOC items
         is_header = (
-            re.match(r'^\d+\.\s+', line) or                    # "1. Title"
-            re.match(r'^[A-Z][A-Za-z\s]+:', line) or          # "Section Title:"
-            re.match(r'^[A-Z\s]{5,}', line) or                # "ALL CAPS TITLE"
-            (len(line) < 100 and not line.endswith('.')) or   # Short lines without periods
-            re.match(r'^[IVX]+\.', line) or                   # "I.", "II.", "III."
-            re.match(r'^\([a-zA-Z]\)', line)                  # "(a)", "(b)", etc.
+            re.match(r'^\d+\.\s+[A-Z]', line) or  # "1. Isotretinoin" - MAIN FIX
+            re.match(r'^\d+\.\s+"', line) or       # "1. "Which client..." 
+            # Keep some original patterns but make them stricter
+            (re.match(r'^\d+\.\s+', line) and len(line) < 100) or
+            re.match(r'^[IVX]+\.\s+[A-Z]', line)   # "I. Introduction"
         )
         
         if is_header:
-            # Save previous section if exists
+            # Save previous section if exists - ORIGINAL LOGIC
             if current_section and (current_section['text'] or current_section['options']):
                 sections.append(current_section)
             
-            # Start new section
+            # Start new section - ORIGINAL LOGIC
             current_section = {
                 'id': str(uuid.uuid4()),
                 'exam_id': exam_uuid,
@@ -53,12 +52,12 @@ def extract_reading_content_from_text(text, exam_uuid):
                 'correct_idx': -1
             }
         
-        # If we're in a section and this line is content
+        # If we're in a section and this line is content - ORIGINAL LOGIC
         elif current_section is not None:
             # Add the line as content (paragraph)
             current_section['options'].append(line)
         
-        # If no section started yet, create one with the first line as title
+        # If no section started yet, create one with the first line as title - ORIGINAL LOGIC
         elif current_section is None:
             current_section = {
                 'id': str(uuid.uuid4()),
@@ -68,11 +67,11 @@ def extract_reading_content_from_text(text, exam_uuid):
                 'correct_idx': -1
             }
     
-    # Don't forget the last section
+    # Don't forget the last section - ORIGINAL LOGIC
     if current_section and (current_section['text'] or current_section['options']):
         sections.append(current_section)
     
-    # If no sections found, treat everything as one section
+    # If no sections found, treat everything as one section - ORIGINAL LOGIC
     if not sections and lines:
         sections.append({
             'id': str(uuid.uuid4()),
@@ -87,6 +86,7 @@ def extract_reading_content_from_text(text, exam_uuid):
         print(f"  Section {i+1}: '{section['text'][:50]}...' - {len(section['options'])} content lines")
     
     return sections
+
 
 # NEW: PROFESSION SELECTION FOR ALL 8 DISCIPLINES
 def get_profession_from_user():
@@ -149,8 +149,97 @@ def get_reading_materials_folder_path(discipline_id):
     
     return full_path
 
+# NEW: CHECK IF FILE ALREADY EXISTS ON SERVER
+def check_file_exists_on_server(filename, discipline_id):
+    """Check if a file with the same title already exists on the server"""
+    try:
+        exam_title = os.path.splitext(filename)[0]
+        
+        # First, try to get all exams for this discipline
+        response = requests.get(f"{BASE_URL}/exams")
+        if response.status_code == 200:
+            all_exams = response.json()
+            # Look for exams with same title and discipline
+            for exam in all_exams:
+                if exam.get('title') == exam_title and exam.get('discipline_id') == discipline_id:
+                    return True, exam.get('id')  # Return True and the existing exam ID
+        return False, None
+    except Exception as e:
+        print(f"⚠️  Could not check server for existing files: {e}")
+        return False, None
+
+# NEW: FILE SELECTION MENU
+def select_files_to_upload(all_files):
+    """Let user choose which files to upload"""
+    print(f"\n📄 Found {len(all_files)} document file(s):")
+    for i, filename in enumerate(all_files, 1):
+        print(f"   {i}. {filename}")
+    
+    while True:
+        print("\n📋 UPLOAD OPTIONS:")
+        print("   1. Upload ALL files")
+        print("   2. Select specific files")
+        
+        choice = input("\nEnter your choice (1 or 2): ").strip()
+        
+        if choice == '1':
+            return all_files  # Return all files
+        elif choice == '2':
+            return select_specific_files(all_files)
+        else:
+            print("❌ Invalid choice. Please enter 1 or 2")
+
+# NEW: SPECIFIC FILE SELECTION
+def select_specific_files(all_files):
+    """Let user select specific files from the list"""
+    selected_files = []
+    
+    print("\n🔍 SELECT FILES (enter numbers separated by spaces):")
+    for i, filename in enumerate(all_files, 1):
+        print(f"   {i}. {filename}")
+    
+    while True:
+        try:
+            selections = input("\nEnter file numbers (e.g., 1 3 5): ").strip().split()
+            if not selections:
+                print("❌ Please select at least one file")
+                continue
+            
+            selected_indices = []
+            for sel in selections:
+                idx = int(sel) - 1
+                if 0 <= idx < len(all_files):
+                    selected_indices.append(idx)
+                else:
+                    print(f"❌ Invalid number: {sel}. Please choose between 1-{len(all_files)}")
+            
+            if selected_indices:
+                selected_files = [all_files[i] for i in selected_indices]
+                print(f"\n✅ Selected {len(selected_files)} file(s):")
+                for filename in selected_files:
+                    print(f"   📄 {filename}")
+                return selected_files
+            else:
+                print("❌ No valid files selected")
+                
+        except ValueError:
+            print("❌ Please enter numbers only")
+
+# NEW: CONFIRM FILE REPLACEMENT
+def confirm_file_replacement(filename):
+    """Ask user for confirmation before replacing existing file"""
+    while True:
+        choice = input(f"🔄 File '{filename}' already exists. Replace it? (y/n): ").strip().lower()
+        if choice in ['y', 'yes']:
+            return True
+        elif choice in ['n', 'no']:
+            return False
+        else:
+            print("❌ Please enter 'y' for yes or 'n' for no")
+
 # MAIN UPLOAD SCRIPT FOR READING MATERIALS
-API_URL = 'https://thecla-backend.onrender.com/exam/'  # Singular endpoint
+BASE_URL = "https://thecla-backend.onrender.com"
+API_URL = f'{BASE_URL}/exam/'  # Singular endpoint
 
 # NEW: Ask user which profession to upload reading materials for
 discipline_id, discipline_name = get_profession_from_user()
@@ -176,14 +265,31 @@ if not all_files:
     print("💡 Please add reading material documents (.docx or .pdf files) to the folder and try again.")
     exit()
 
-print(f"📄 Found {len(all_files)} document file(s) to process:")
-print(f"   - Word documents: {len(docx_files)}")
-print(f"   - PDF files: {len(pdf_files)}")
+# NEW: FILE SELECTION PROCESS
+files_to_upload = select_files_to_upload(all_files)
 
-for filename in all_files:
+print(f"\n🚀 Ready to upload {len(files_to_upload)} file(s)")
+
+uploaded_count = 0
+skipped_count = 0
+
+for filename in files_to_upload:
     file_path = os.path.join(folder_path, filename)
     try:
-        exam_uuid = str(uuid.uuid4())  # Generate a UUID for the exam
+        # NEW: CHECK FOR EXISTING FILE ON SERVER
+        file_exists, existing_exam_id = check_file_exists_on_server(filename, discipline_id)
+        
+        if file_exists:
+            if not confirm_file_replacement(filename):
+                print(f"⏭️  Skipping '{filename}' - user chose not to replace")
+                skipped_count += 1
+                continue
+            # If replacing, we'll use the existing exam ID instead of generating a new one
+            exam_uuid = existing_exam_id or str(uuid.uuid4())
+            replacement_note = " (REPLACING EXISTING)"
+        else:
+            exam_uuid = str(uuid.uuid4())
+            replacement_note = " (NEW)"
         
         # Handle different file types
         if filename.lower().endswith('.docx'):
@@ -199,10 +305,12 @@ for filename in all_files:
             
         else:
             print(f"❌ Unsupported file type: {filename}")
+            skipped_count += 1
             continue
         
         if not full_text.strip():
             print(f"⚠️  No text extracted from: {filename}")
+            skipped_count += 1
             continue
             
         # USE THE PARSER FOR READING MATERIALS
@@ -220,7 +328,7 @@ for filename in all_files:
             "questions": questions
         }
         
-        print(f"\n📤 Uploading reading material from file: {file_path}")
+        print(f"\n📤 Uploading reading material from file: {file_path}{replacement_note}")
         print(f"📝 Material Title: {exam_title}")
         print(f"📄 File Type: {file_type}")
         print(f"📖 Sections: {len(questions)}")
@@ -231,12 +339,17 @@ for filename in all_files:
         response = requests.post(API_URL, json=payload)
         if response.status_code == 200:
             print(f"✅ SUCCESS: {exam_title} - Status: {response.status_code}")
+            uploaded_count += 1
         else:
             print(f"❌ FAILED: {exam_title} - Status: {response.status_code}")
             print(f"   Error: {response.text}")
+            skipped_count += 1
             
     except Exception as e:
         print(f"💥 Error processing {file_path}: {e}")
+        skipped_count += 1
 
-print(f"\n🎉 Reading materials upload completed for {discipline_name}!")
-print(f"📁 Files were processed from: {folder_path}")
+print(f"\n🎉 Upload completed!")
+print(f"📊 Summary: {uploaded_count} uploaded, {skipped_count} skipped")
+print(f"🎯 Discipline: {discipline_name}")
+print(f"📁 Processed from: {folder_path}")

@@ -142,7 +142,7 @@ def check_existing_exam(exam_title, discipline_id):
     """Check if an exam with similar name already exists"""
     try:
         # Search for exams by title and discipline
-        search_url = f'{API_URL}search'
+        search_url = f'{API_URL.rstrip("/")}/search'  # Remove trailing slash and add /search
         params = {
             'title': exam_title,
             'discipline_id': discipline_id
@@ -239,9 +239,12 @@ def process_exam_file(filename, folder_path, discipline_id, discipline_name):
         questions = extract_questions_from_text(full_text, exam_uuid)
         exam_title = filename.replace('.docx', '')
         
-        # CHECK FOR EXISTING EXAM
+        # ✅ FIXED: CHECK FOR EXISTING EXAM (with better debugging)
+        print(f"🔍 Checking for existing exam: '{exam_title}' in {discipline_id}")
         existing_exam = check_existing_exam(exam_title, discipline_id)
+        
         if existing_exam:
+            print(f"⚠️  FOUND EXISTING EXAM: {existing_exam.get('title')} (ID: {existing_exam.get('id')})")
             if confirm_overwrite(exam_title, existing_exam):
                 print("🗑️  Deleting existing exam...")
                 if delete_existing_exam(existing_exam['id']):
@@ -252,6 +255,8 @@ def process_exam_file(filename, folder_path, discipline_id, discipline_name):
             else:
                 print("⏭️  Skipping upload - keeping existing exam")
                 return
+        else:
+            print("✅ No existing exam found - proceeding with upload")
         
         # Prepare payload
         payload = {
@@ -282,6 +287,8 @@ def process_exam_file(filename, folder_path, discipline_id, discipline_name):
             
     except Exception as e:
         print(f"💥 Error processing {doc_path}: {e}")
+
+
 
 # NEW: BATCH UPLOAD ALL EXAMS
 def upload_all_exams():
@@ -315,8 +322,8 @@ def upload_all_exams():
     print(f"📁 Files were processed from: {folder_path}")
 
 # MAIN UPLOAD SCRIPT
-#API_URL = 'https://thecla-backend.onrender.com/exams/'
-API_URL = 'https://77c6f0dff7e2.ngrok-free.app/exams/'
+API_URL = 'https://thecla-backend.onrender.com/exams/'
+# API_URL = 'https://77c6f0dff7e2.ngrok-free.app/exams/'
 
 def main():
     """Main menu for exam upload options"""
