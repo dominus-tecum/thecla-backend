@@ -315,7 +315,8 @@ def upload_all_exams():
     print(f"📁 Files were processed from: {folder_path}")
 
 # MAIN UPLOAD SCRIPT
-API_URL = 'https://420f6f74b2f1.ngrok-free.app/admin/keamedexam/exams/'  # ✅ UPDATED: KeamedExam endpoint
+#API_URL = 'https://420f6f74b2f1.ngrok-free.app/admin/keamedexam/exams/'  # ✅ UPDATED: KeamedExam endpoint
+API_URL = 'https://thecla-backend.onrender.com/admin/keamedexam/exams/'  # ✅ UPDATED: KeamedExam endpoint
 
 def main():
     """Main menu for exam upload options"""

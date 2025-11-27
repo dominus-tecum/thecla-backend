@@ -63,7 +63,8 @@ def check_database_connection():
 # ===== RUN THE DEBUG CHECK =====
 check_database_connection()
 
-API_URL = 'https://420f6f74b2f1.ngrok-free.app/admin/keamedexam'  # ✅ UPDATED: KeamedExam base URL
+#API_URL = 'https://420f6f74b2f1.ngrok-free.app/admin/keamedexam'  # ✅ UPDATED: KeamedExam base URL
+API_URL = 'https://thecla-backend.onrender.com/admin/keamedexam'  # ✅ UPDATED: KeamedExam base URL
 
 # ===== NEW: COMPARE DATABASES FUNCTION =====
 def compare_databases():

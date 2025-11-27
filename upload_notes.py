@@ -239,6 +239,7 @@ def confirm_file_replacement(filename):
 
 # MAIN UPLOAD SCRIPT FOR READING MATERIALS
 BASE_URL = "https://thecla-backend.onrender.com"
+#BASE_URL = "https://7215b3fb2cc3.ngrok-free.app"
 API_URL = f'{BASE_URL}/exam/'  # Singular endpoint
 
 # NEW: Ask user which profession to upload reading materials for

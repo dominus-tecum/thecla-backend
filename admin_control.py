@@ -6,7 +6,7 @@ import os
 
 API_URL = 'https://thecla-backend.onrender.com'
 
-# API_URL = 'https://25d32be38252.ngrok-free.app'
+#API_URL = 'https://7215b3fb2cc3.ngrok-free.app'
 
 def list_exams_menu():
     """Sub-menu for listing exams by profession"""
