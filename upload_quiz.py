@@ -6,7 +6,7 @@ import requests
 
 # 🟢 CORRECT: Use plural exams endpoint for Smart Quiz
 API_URL = 'https://thecla-backend.onrender.com/quiz/create'
-#API_URL = 'https://7215b3fb2cc3.ngrok-free.app/quiz/create'
+#API_URL = 'https://93c2af60c5f9.ngrok-free.app/quiz/create'
 
 
 def extract_questions_from_text(text, exam_uuid):
