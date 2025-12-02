@@ -1261,6 +1261,101 @@ def generate_intelligent_quiz(
 # =============================================================================
 
 
+@app.post("/exams/submit")
+def submit_exam_results(
+    exam_data: dict = Body(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Enhanced exam submission endpoint - stores detailed answers in activity log"""
+    try:
+        # Get exam details
+        exam = db.query(Exam).filter(Exam.id == exam_data.get("exam_id")).first()
+        if not exam:
+            raise HTTPException(status_code=404, detail="Exam not found")
+        
+        # Extract data
+        score = exam_data.get("score", 0)
+        total_questions = exam_data.get("total_questions", 0)
+        
+        # NEW: Get user answers if provided
+        user_answers = exam_data.get("user_answers", {})
+        
+        # Store in user_activity WITH detailed answers
+        activity = log_activity(db, current_user.id, "exam_completed", {
+            "exam_id": exam_data.get("exam_id"),
+            "exam_title": exam.title,
+            "score": score,
+            "total_questions": total_questions,
+            "percentage": score,
+            "passed": score >= 70,
+            "timestamp": datetime.utcnow().isoformat(),
+            # NEW: Add user answers to activity data
+            "user_answers": user_answers  # Store whatever is sent
+        })
+        
+        return {
+            "message": "Exam results saved successfully",
+            "activity_id": activity.id,
+            "score": score,
+            "answers_received": len(user_answers)  # NEW: Just for debugging
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving results: {str(e)}")
+
+
+
+
+# DELETE SPECIfic EXAM
+
+@app.delete("/admin/exams/{exam_id}")
+def delete_singular_exam(
+    exam_id: str,
+    db: Session = Depends(get_db)
+):
+    """Delete a exam (singular exam)"""
+    exam = db.query(Exam).filter(Exam.id == exam_id).first()
+    if not exam:
+        raise HTTPException(status_code=404, detail="Study note not found")
+    
+    db.delete(exam)
+    db.commit()
+    
+    return {"msg": f"exam'{exam.title}' deleted successfully"}
+
+
+@app.delete("/admin/exams/discipline/{discipline}")
+def delete_exams_by_discipline(
+    discipline: str,
+    db: Session = Depends(get_db)
+):
+    """Delete all exams (plural exams) for a specific discipline"""
+    # Find all singular exams (study notes) for this discipline
+    exams = db.query(Exam).filter(
+        Exam.discipline_id == discipline,
+        Exam.source == "plural"
+    ).all()
+    
+    if not exams:
+        raise HTTPException(status_code=404, detail=f"No exam found for discipline: {discipline}")
+    
+    # SIMPLE DELETE - just like the working function
+    deleted_count = db.query(Exam).filter(
+        Exam.discipline_id == discipline,
+        Exam.source == "plural"
+    ).delete()
+    
+    db.commit()
+    
+    return {
+        "msg": f"Deleted {deleted_count} exams for discipline: {discipline}",
+        "deleted_count": deleted_count,
+        "discipline": discipline
+    }
+
+
+
 
 
 @app.post("/exams")
@@ -1983,7 +2078,6 @@ def delete_singular_exam(
     db.commit()
     
     return {"msg": f"Study note '{exam.title}' deleted successfully"}
-
 
 
 @app.delete("/admin/exam/discipline/{discipline}")

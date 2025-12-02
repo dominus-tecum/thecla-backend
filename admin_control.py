@@ -6,7 +6,7 @@ import os
 
 API_URL = 'https://thecla-backend.onrender.com'
 
-#API_URL = 'https://7215b3fb2cc3.ngrok-free.app'
+#API_URL = 'https://53a15f117877.ngrok-free.app'
 
 def list_exams_menu():
     """Sub-menu for listing exams by profession"""
@@ -979,7 +979,7 @@ def delete_specific_note(note_id):
 
 
 
-# ===== NEW: DELETE ALL NOTE FUNCTIONS =====
+# ===== NEW: DELETE ALL EXAM FUNCTIONS =====
 
 def delete_all_exams_in_discipline():
     """Delete all exams in a specific discipline"""
@@ -995,7 +995,7 @@ def delete_all_exams_in_discipline():
         return
     
     try:
-        response = requests.delete(f"{API_URL}/admin/exam/discipline/{discipline}")
+        response = requests.delete(f"{API_URL}/admin/exams/discipline/{discipline}")
         
         if response.status_code == 200:
             result = response.json()

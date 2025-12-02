@@ -323,7 +323,7 @@ def upload_all_exams():
 
 # MAIN UPLOAD SCRIPT
 API_URL = 'https://thecla-backend.onrender.com/exams/'
-#API_URL = 'https://7215b3fb2cc3.ngrok-free.app/exams/'
+#API_URL = 'https://53a15f117877.ngrok-free.app/exams/'
 
 def main():
     """Main menu for exam upload options"""
