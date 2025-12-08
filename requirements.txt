@@ -16,6 +16,7 @@ greenlet==3.2.4
 h11==0.16.0
 idna==3.11
 jmespath==1.0.1
+openai==2.3.0
 passlib==1.7.4
 pyasn1==0.6.1
 pycparser==2.23
@@ -38,4 +39,4 @@ typing_extensions==4.15.0
 urllib3==2.5.0
 uvicorn==0.38.0
 wheel==0.45.1
-phonenumbers==8.13.27"openai==2.3.0" 
+phonenumbers==8.13.27
