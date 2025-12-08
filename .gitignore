@@ -39,3 +39,9 @@ Host
 POST
 User-Agent
 pip
+
+# Android builds/output
+android_builds/
+android/app/build/outputs/
+*.apk
+*.aab

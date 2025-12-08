@@ -238,7 +238,8 @@ def confirm_file_replacement(filename):
             print("❌ Please enter 'y' for yes or 'n' for no")
 
 # MAIN UPLOAD SCRIPT FOR READING MATERIALS
-BASE_URL = "https://76e5dd746fd8.ngrok-free.app"
+BASE_URL = "https://thecla-backend.onrender.com"
+#BASE_URL = "https://7215b3fb2cc3.ngrok-free.app"
 API_URL = f'{BASE_URL}/exam/'  # Singular endpoint
 
 # NEW: Ask user which profession to upload reading materials for

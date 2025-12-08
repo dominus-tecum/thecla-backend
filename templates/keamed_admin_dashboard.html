@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KeamedExam Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1e40af;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #1e40af;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .score-high { color: #10b981; font-weight: bold; }
+        .score-medium { color: #f59e0b; font-weight: bold; }
+        .score-low { color: #ef4444; font-weight: bold; }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .config-panel {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .config-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #374151;
+        }
+        input, select {
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #1e40af;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #1e3a8a;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #1e40af;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>KeamedExam Admin Dashboard</h1>
+        
+        <!-- Configuration Panel -->
+        <div class="config-panel">
+            <h3>Exam Configuration</h3>
+            <div class="config-form">
+                <div class="form-group">
+                    <label>Exam Type:</label>
+                    <input type="text" id="examType" placeholder="e.g., standard_timed">
+                </div>
+                <div class="form-group">
+                    <label>Time Per Question (minutes):</label>
+                    <input type="number" id="timePerQuestion" step="0.1" placeholder="1.5">
+                </div>
+                <div class="form-group">
+                    <label>Total Questions:</label>
+                    <input type="number" id="totalQuestions" placeholder="50">
+                </div>
+                <button onclick="saveConfig()">Save Configuration</button>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats" id="statsPanel">
+            <div class="stat-card">
+                <div class="stat-number" id="totalExams">0</div>
+                <div class="stat-label">Total Exams Taken</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="avgScore">0%</div>
+                <div class="stat-label">Average Score</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalCandidates">0</div>
+                <div class="stat-label">Total Candidates</div>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <h3>Exam Results</h3>
+        <div id="loading" class="loading">Loading exam results...</div>
+        <table id="resultsTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Candidate Name</th>
+                    <th>Profession</th>
+                    <th>Exam Type</th>
+                    <th>Exam ID</th>
+                    <th>Score</th>
+                    <th>Date & Time</th>
+                </tr>
+            </thead>
+            <tbody id="resultsBody">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Load results when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadResults();
+            loadConfig();
+        });
+
+        // Load exam results
+        async function loadResults() {
+            try {
+                const response = await fetch('/admin/keamedexam/results');
+                const results = await response.json();
+                
+                if (response.ok) {
+                    displayResults(results);
+                    updateStats(results);
+                } else {
+                    console.error('Error loading results:', results.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Display results in table
+        function displayResults(results) {
+            const resultsBody = document.getElementById('resultsBody');
+            const loading = document.getElementById('loading');
+            const table = document.getElementById('resultsTable');
+            
+            loading.style.display = 'none';
+            table.style.display = 'table';
+            
+            resultsBody.innerHTML = '';
+            
+            results.forEach(result => {
+                const row = document.createElement('tr');
+                
+                // Determine score class
+                let scoreClass = 'score-medium';
+                if (result.score >= 80) scoreClass = 'score-high';
+                else if (result.score < 60) scoreClass = 'score-low';
+                
+                row.innerHTML = `
+                    <td>${result.user_name}</td>
+                    <td>${result.user_profession || 'N/A'}</td>
+                    <td>${result.exam_type}</td>
+                    <td>${result.exam_id}</td>
+                    <td class="${scoreClass}">${result.score}%</td>
+                    <td>${new Date(result.timestamp).toLocaleString()}</td>
+                `;
+                
+                resultsBody.appendChild(row);
+            });
+        }
+
+        // Update statistics
+        function updateStats(results) {
+            const totalExams = results.length;
+            const totalCandidates = new Set(results.map(r => r.user_name)).size;
+            const avgScore = totalExams > 0 
+                ? Math.round(results.reduce((sum, r) => sum + r.score, 0) / totalExams)
+                : 0;
+            
+            document.getElementById('totalExams').textContent = totalExams;
+            document.getElementById('avgScore').textContent = avgScore + '%';
+            document.getElementById('totalCandidates').textContent = totalCandidates;
+        }
+
+        // Load current configurations
+        async function loadConfig() {
+            try {
+                const response = await fetch('/admin/keamedexam/config');
+                const configs = await response.json();
+                
+                if (response.ok) {
+                    console.log('Current configurations:', configs);
+                }
+            } catch (error) {
+                console.error('Error loading config:', error);
+            }
+        }
+
+        // Save new configuration
+        async function saveConfig() {
+            const examType = document.getElementById('examType').value;
+            const timePerQuestion = parseFloat(document.getElementById('timePerQuestion').value);
+            const totalQuestions = parseInt(document.getElementById('totalQuestions').value);
+            
+            if (!examType || !timePerQuestion || !totalQuestions) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/admin/keamedexam/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        exam_type: examType,
+                        time_per_question: timePerQuestion,
+                        total_questions: totalQuestions
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('Configuration saved successfully!');
+                    // Clear form
+                    document.getElementById('examType').value = '';
+                    document.getElementById('timePerQuestion').value = '';
+                    document.getElementById('totalQuestions').value = '';
+                } else {
+                    alert('Error saving configuration: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error saving configuration');
+            }
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadResults, 30000);
+    </script>
+</body>
+</html>
