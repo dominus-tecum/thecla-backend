@@ -1519,28 +1519,32 @@ class AIQuestionEngine:
 # from openai import OpenAI
 # client = OpenAI(api_key=config.OPENAI_API_KEY)
 
-response = await asyncio.wait_for(
-    # ✅ NEW SYNTAX:
-    openai_client.chat.completions.create(
-        model=self.config.model,
-        messages=[
-            {
-                "role": "system", 
-                "content": """You are a medical education expert. Generate high-quality multiple-choice questions for healthcare professionals.
-                Follow these rules:
-                1. Questions must be medically accurate and evidence-based
-                2. All options should be plausible but only one correct
-                3. Include detailed rationales explaining why the answer is correct and others are wrong
-                4. Use clear, professional medical language
-                5. Avoid ambiguous wording"""
-            },
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=self.config.max_tokens,
-        temperature=self.config.temperature
-    ),
-    timeout=10.0
-)
+                    # Call OpenAI with timeout
+            try:
+                response = await asyncio.wait_for(
+                    openai_client.chat.completions.create(
+                        model=self.config.model,
+                        messages=[
+                            {
+                                "role": "system", 
+                                "content": """You are a medical education expert. Generate high-quality multiple-choice questions for healthcare professionals.
+                                Follow these rules:
+                                1. Questions must be medically accurate and evidence-based
+                                2. All options should be plausible but only one correct
+                                3. Include detailed rationales explaining why the answer is correct and others are wrong
+                                4. Use clear, professional medical language
+                                5. Avoid ambiguous wording"""
+                            },
+                            {"role": "user", "content": prompt}
+                        ],
+                        max_tokens=self.config.max_tokens,
+                        temperature=self.config.temperature
+                    ),
+                    timeout=10.0
+                )
+            except Exception as e:
+                print(f"❌ OpenAI API error: {e}")
+                return None
             
             ai_text = response.choices[0].message.content
             
@@ -2058,42 +2062,6 @@ def get_ai_hybrid_quiz(
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # ====================== ADMIN AI MONITORING ======================
 
 @app.get("/admin/ai-usage")
@@ -2122,25 +2090,21 @@ def get_ai_usage_stats(db: Session = Depends(get_db)):
 
 # ====================== UTILITY FUNCTIONS ======================
 
+# ====================== UTILITY FUNCTIONS ======================
+
 def validate_openai_key():
     """Validate OpenAI API key on startup"""
     if not openai_client:
-    # If client not initialized, AI features are disabled
-    print("⚠️ OpenAI not configured - AI features disabled")
+        # If client not initialized, AI features are disabled
+        print("⚠️ OpenAI not configured - AI features disabled")
         print("⚠️ WARNING: OpenAI API key not configured")
         print("⚠️ AI features will be disabled")
         return False
     
     try:
         # Simple validation by checking model list
-        if openai_client:
-    models = openai_client.models.list()
-    # Rest of your code...
-else:
-    print("⚠️ Cannot list models - OpenAI client not initialized")
-    models = []
-                        
-        dated, {len(models.data)} models available")
+        models = openai_client.models.list()
+        print(f"✅ OpenAI API key validated, {len(models.data)} models available")
         return True
     except Exception as e:
         print(f"❌ OpenAI API key validation failed: {e}")
@@ -2148,39 +2112,6 @@ else:
 
 # Call validation on import
 validate_openai_key()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5547,6 +5478,87 @@ def get_single_user_usage(
         "procedures": usage.procedure_count,
         "ai_quiz_questions": usage.ai_quiz_questions_count
     }
+
+
+
+
+
+@app.post("/create-admin")
+def create_admin_user(
+    email: str = "admin@thecla.com",
+    password: str = "admin123",
+    db: Session = Depends(get_db)
+):
+    """TEMPORARY: Create admin user (remove after use)"""
+    try:
+        from passlib.context import CryptContext
+        
+        # Initialize password hasher
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        
+        # Check if user already exists
+        existing_user = db.query(User).filter(User.email == email).first()
+        if existing_user:
+            # Update to admin
+            existing_user.is_admin = True
+            existing_user.role = "admin"
+            db.commit()
+            return {
+                "message": f"User {email} updated to admin",
+                "user_id": existing_user.id
+            }
+        
+        # Create new admin user
+        hashed_password = pwd_context.hash(password)
+        
+        user = User(
+            email=email,
+            password_hash=hashed_password,
+            name="Admin User",
+            is_admin=True,
+            role="admin",
+            created_at=datetime.utcnow(),
+            is_active=True
+        )
+        
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        print(f"✅ Admin user created: {email} (ID: {user.id})")
+        
+        return {
+            "success": True,
+            "message": f"Admin user {email} created",
+            "user_id": user.id,
+            "email": email,
+            "password": password  # Only for initial setup
+        }
+        
+    except Exception as e:
+        print(f"❌ Failed to create admin: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create admin: {str(e)}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
