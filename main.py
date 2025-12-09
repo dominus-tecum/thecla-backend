@@ -277,9 +277,9 @@ class DailyUsageTracking(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     tracking_date = Column(Date, index=True)  # Use tracking_date, not date
-    simulations = Column('simulation_count', Integer, default=0)  # Map to simulation_count
-    procedures = Column('procedure_count', Integer, default=0)    # Map to procedure_count
-    quiz_questions = Column('ai_quiz_questions_count', Integer, default=0)  # Map to ai_quiz_questions_count
+    simulation_count = Column(Integer, default=0)
+    procedure_count = Column(Integer, default=0)
+    ai_quiz_questions_count = Column(Integer, default=0)
     is_premium = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
