@@ -4980,17 +4980,17 @@ def check_daily_limit(
             user_id=user_id,
             tracking_date=today,
             is_premium=is_currently_premium,
-            simulations=0,
-            procedures=0,
-            quiz_questions=0
+            simulation_count=0,           # ← FIXED
+            procedure_count=0,            # ← FIXED  
+            ai_quiz_questions_count=0     # ← FIXED
         )
         db.add(usage)
         db.commit()
     
     FIELD_MAPPING = {
-        'simulation': 'simulations',
-        'procedure': 'procedures',
-        'quiz_question': 'quiz_questions'
+        'simulation': 'simulation_count',
+        'procedure': 'procedure_count',
+        'quiz_question': 'ai_quiz_questions_count'
     }
     
     count_field = FIELD_MAPPING.get(resource_type)
