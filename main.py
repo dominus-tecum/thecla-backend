@@ -45,9 +45,17 @@ except ImportError:
     config = SimpleConfig()
 
 # Set OpenAI API key if available
+# Initialize OpenAI client if available
+openai_client = None
+
 if OPENAI_AVAILABLE and config.OPENAI_API_KEY and config.OPENAI_API_KEY != "sk-your-actual-openai-api-key-here":
-    openai.api_key = config.OPENAI_API_KEY
-    print(f"✅ OpenAI configured with model: {config.OPENAI_MODEL}")
+    try:
+        from openai import OpenAI
+        openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
+        print(f"✅ OpenAI client initialized with model: {config.OPENAI_MODEL}")
+    except Exception as e:
+        print(f"❌ Failed to initialize OpenAI client: {e}")
+        openai_client = None
 else:
     if not OPENAI_AVAILABLE:
         print("⚠️ OpenAI package not installed. Run: pip install openai")
@@ -1426,8 +1434,8 @@ import openai
 import asyncio
 from datetime import datetime, timedelta
 
-# Initialize OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY", "your-openai-api-key-here")
+
+
 
 # ====================== AI MODELS & CONFIG ======================
 
@@ -1506,27 +1514,33 @@ class AIQuestionEngine:
             )
             
             # Call OpenAI with timeout
-            response = await asyncio.wait_for(
-                openai.ChatCompletion.acreate(
-                    model=self.config.model,
-                    messages=[
-                        {
-                            "role": "system", 
-                            "content": """You are a medical education expert. Generate high-quality multiple-choice questions for healthcare professionals.
-                            Follow these rules:
-                            1. Questions must be medically accurate and evidence-based
-                            2. All options should be plausible but only one correct
-                            3. Include detailed rationales explaining why the answer is correct and others are wrong
-                            4. Use clear, professional medical language
-                            5. Avoid ambiguous wording"""
-                        },
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=self.config.max_tokens,
-                    temperature=self.config.temperature
-                ),
-                timeout=10.0
-            )
+           # First, make sure you have the client initialized earlier
+# Add at the top of your file or class:
+# from openai import OpenAI
+# client = OpenAI(api_key=config.OPENAI_API_KEY)
+
+response = await asyncio.wait_for(
+    # ✅ NEW SYNTAX:
+    openai_client.chat.completions.create(
+        model=self.config.model,
+        messages=[
+            {
+                "role": "system", 
+                "content": """You are a medical education expert. Generate high-quality multiple-choice questions for healthcare professionals.
+                Follow these rules:
+                1. Questions must be medically accurate and evidence-based
+                2. All options should be plausible but only one correct
+                3. Include detailed rationales explaining why the answer is correct and others are wrong
+                4. Use clear, professional medical language
+                5. Avoid ambiguous wording"""
+            },
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=self.config.max_tokens,
+        temperature=self.config.temperature
+    ),
+    timeout=10.0
+)
             
             ai_text = response.choices[0].message.content
             
@@ -1664,17 +1678,18 @@ class AIQuestionEngine:
             """
             
             response = await asyncio.wait_for(
-                openai.ChatCompletion.acreate(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": "You are a medical educator enhancing explanations."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=300,
-                    temperature=0.3
-                ),
-                timeout=5.0
-            )
+    # ✅ NEW SYNTAX:
+    openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are a medical educator enhancing explanations."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=300,
+        temperature=0.3
+    ),
+    timeout=5.0
+)
             
             enhanced = response.choices[0].message.content.strip()
             return enhanced if enhanced and len(enhanced) > 50 else base_rationale
@@ -2102,22 +2117,30 @@ def get_ai_usage_stats(db: Session = Depends(get_db)):
         "total_smart_quizzes": total_exams,
         "ai_adoption_rate": round((ai_exams / total_exams * 100), 2) if total_exams > 0 else 0,
         "total_questions_generated": total_questions,
-        "status": "AI integration active" if openai.api_key else "AI not configured"
+        "status": "AI integration active" if openai_client else "AI not configured"
     }
 
 # ====================== UTILITY FUNCTIONS ======================
 
 def validate_openai_key():
     """Validate OpenAI API key on startup"""
-    if not openai.api_key or openai.api_key == "your-openai-api-key-here":
+    if not openai_client:
+    # If client not initialized, AI features are disabled
+    print("⚠️ OpenAI not configured - AI features disabled")
         print("⚠️ WARNING: OpenAI API key not configured")
         print("⚠️ AI features will be disabled")
         return False
     
     try:
         # Simple validation by checking model list
-        models = openai.Model.list()
-        print(f"✅ OpenAI API key validated, {len(models.data)} models available")
+        if openai_client:
+    models = openai_client.models.list()
+    # Rest of your code...
+else:
+    print("⚠️ Cannot list models - OpenAI client not initialized")
+    models = []
+                        
+        dated, {len(models.data)} models available")
         return True
     except Exception as e:
         print(f"❌ OpenAI API key validation failed: {e}")
@@ -4630,7 +4653,7 @@ def assess_simulation_decision(
         model = os.getenv("OPENAI_MODEL", "gpt-4")
         
         # ✅ CALL OPENAI FOR ASSESSMENT
-        response = openai.chat.completions.create(
+        response = openai_client.chat.completions.create(
             model=model,
             messages=[
                 {
@@ -4935,12 +4958,12 @@ async def generate_openai_procedure(
     """Call OpenAI from backend (API key in .env)"""
     try:
         # Your .env API key is already loaded in config.OPENAI_API_KEY
-        response = await openai.ChatCompletion.acreate(
-            model=config.OPENAI_MODEL,
-            messages=[...],  # Your existing prompt
-            temperature=0.9,
-            response_format={ "type": "json_object" }
-        )
+        response = await openai_client.chat.completions.create(
+    model=config.OPENAI_MODEL,
+    messages=[...],  # Your existing prompt
+    temperature=0.9,
+    response_format={ "type": "json_object" }
+)
         
         # Return the OpenAI response
         return JSONResponse(content=json.loads(response.choices[0].message.content))
