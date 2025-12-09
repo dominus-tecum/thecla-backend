@@ -5083,12 +5083,20 @@ def check_daily_limit(
 
 
 
-
 @app.post("/audit/record-usage")
 def record_daily_usage(data: dict = Body(...), db: Session = Depends(get_db)):
+    print("🔍 [RECORD-USAGE] DEBUG START")
+    print(f"🔍 [RECORD-USAGE] Data: {data}")
+    
     user_id = data.get("user_id")
     resource_type = data.get("resource_type")
     count = data.get("count", 1)
+    
+    print(f"🔍 [RECORD-USAGE] user_id={user_id}, resource_type={resource_type}, count={count}")
+    
+    if not user_id or not resource_type:
+        print(f"❌ [RECORD-USAGE] Missing fields")
+        return {"success": False, "error": "Missing user_id or resource_type"}
     
     today = date.today()
     
@@ -5098,31 +5106,45 @@ def record_daily_usage(data: dict = Body(...), db: Session = Depends(get_db)):
     ).first()
         
     if not usage:
-        raise HTTPException(status_code=400, detail="No daily record found. Call check-limit first.")
+        print(f"❌ [RECORD-USAGE] No usage record for user {user_id} on {today}")
+        return {
+            "success": False, 
+            "error": "No daily record found. Call check-limit first.",
+            "user_id": user_id,
+            "date": str(today)
+        }
            
+    # ✅ CORRECTED FIELD MAPPING
     FIELD_MAPPING = {
-        'simulation': 'simulations',
-        'procedure': 'procedures',
-        'quiz_question': 'quiz_questions'
+        'simulation': 'simulation_count',
+        'procedure': 'procedure_count',
+        'quiz_question': 'ai_quiz_questions_count'
     }
     
     count_field = FIELD_MAPPING.get(resource_type)
     if not count_field:
-        raise HTTPException(status_code=400, detail=f"Unknown resource type: {resource_type}")
-      
+        error_msg = f"Unknown resource type: {resource_type}"
+        print(f"❌ [RECORD-USAGE] {error_msg}")
+        return {"success": False, "error": error_msg}
+    
+    print(f"🔍 [RECORD-USAGE] Incrementing {count_field} by {count}")
+    
     current_value = getattr(usage, count_field, 0)
-    setattr(usage, count_field, current_value + count)
+    new_value = current_value + count
+    setattr(usage, count_field, new_value)
     usage.updated_at = datetime.utcnow()
 
     db.commit()
+    
+    print(f"✅ [RECORD-USAGE] Success! {resource_type}: {current_value} → {new_value}")
        
     return {
         "success": True,
         "resource_type": resource_type,
-        "new_count": getattr(usage, count_field),
+        "current_count": current_value,
+        "new_count": new_value,
         "date": str(today)
     }
-
 
 
 
