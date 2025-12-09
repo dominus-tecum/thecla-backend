@@ -4931,16 +4931,18 @@ def check_daily_limit(
     
     print(f"🔍 [CHECK-LIMIT] User {user_id} checking {resource_type}")
     
-    if current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    # Get user from database
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     
     today = date.today()
     
-    # Calculate CURRENT premium status
+    # Calculate CURRENT premium status - USING USER FROM DATABASE
     is_currently_premium = (
-        current_user.premium_features and
-        current_user.premium_features.get('ai_simulation', False) and
-        current_user.premium_features.get('procedure_trainer', False)
+        user.premium_features and
+        user.premium_features.get('ai_simulation', False) and
+        user.premium_features.get('procedure_trainer', False)
     )
     
     print(f"🔍 [CHECK-LIMIT] Current premium status: {is_currently_premium}")
@@ -4980,9 +4982,9 @@ def check_daily_limit(
             user_id=user_id,
             tracking_date=today,
             is_premium=is_currently_premium,
-            simulation_count=0,           # ← FIXED
-            procedure_count=0,            # ← FIXED  
-            ai_quiz_questions_count=0     # ← FIXED
+            simulation_count=0,
+            procedure_count=0,
+            ai_quiz_questions_count=0
         )
         db.add(usage)
         db.commit()
@@ -5000,7 +5002,7 @@ def check_daily_limit(
     current_count = getattr(usage, count_field, 0)
        
     # ========== CUSTOM LIMITS OVERRIDE EVERYTHING ==========
-    custom_limits = current_user.premium_features.get('custom_limits', {}) if current_user.premium_features else {}
+    custom_limits = user.premium_features.get('custom_limits', {}) if user.premium_features else {}  # FIXED: user not current_user
     
     # Get custom limit for this resource type
     limit = None
@@ -5070,7 +5072,7 @@ def check_daily_limit(
         "reason": reason,
         "current": current_count,
         "limit": limit,
-        "is_premium": is_currently_premium,  # Return CURRENT status
+        "is_premium": is_currently_premium,
         "limit_type": limit_type
     }
 
