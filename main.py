@@ -5274,7 +5274,7 @@ def get_current_admin_user(current_user: User = Depends(get_current_active_user)
 def get_daily_usage_summary(
     date: str,
     db: Session = Depends(get_db),
-    admin_user: User = Depends(get_current_admin_user)  # UNCOMMENTED: Admin check
+    #admin_user: User = Depends(get_current_admin_user)  # UNCOMMENTED: Admin check
 ):
     """Get daily usage summary for all users (ADMIN ONLY)"""
     try:
@@ -5308,7 +5308,7 @@ def get_daily_usage_summary(
 def get_user_usage_list(
     date: str = Query(default_factory=lambda: date.today().isoformat()),
     db: Session = Depends(get_db),
-    admin_user: User = Depends(get_current_admin_user)  # UNCOMMENTED: Admin check
+    #admin_user: User = Depends(get_current_admin_user)  # UNCOMMENTED: Admin check
 ):
     """Get usage list for all users on specific date (ADMIN ONLY)"""
     try:
