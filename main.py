@@ -206,7 +206,9 @@ class User(Base):
     status = Column(String, default=UserStatus.PENDING)  # NEW: User approval status
     created_at = Column(DateTime, default=datetime.utcnow)
     approved_at = Column(DateTime, nullable=True)
-  
+    is_admin = Column(Boolean, default=False, nullable=False)
+    role = Column(String, default="user", nullable=False)  # "user" or "admin"
+ 
     # ✅ ADD THIS EXACTLY HERE:
     premium_features = Column(
         JSON, 
@@ -5481,8 +5483,6 @@ def get_single_user_usage(
 
 
 
-
-
 @app.post("/create-admin")
 def create_admin_user(
     email: str = "admin@thecla.com",
@@ -5499,26 +5499,38 @@ def create_admin_user(
         # Check if user already exists
         existing_user = db.query(User).filter(User.email == email).first()
         if existing_user:
-            # Update to admin
+            # Update to admin using CORRECT field names
             existing_user.is_admin = True
             existing_user.role = "admin"
+            existing_user.status = "active"
             db.commit()
             return {
+                "success": True,
                 "message": f"User {email} updated to admin",
                 "user_id": existing_user.id
             }
         
-        # Create new admin user
+        # Create new admin user with CORRECT field names
         hashed_password = pwd_context.hash(password)
         
         user = User(
             email=email,
-            password_hash=hashed_password,
-            name="Admin User",
-            is_admin=True,
-            role="admin",
+            hashed_password=hashed_password,
+            full_name="Admin User",  # CORRECT: full_name not name
+            phone="+1234567890",
+            profession="admin",
+            specialist_type="admin",
+            status="active",  # CORRECT: status not is_active
             created_at=datetime.utcnow(),
-            is_active=True
+            approved_at=datetime.utcnow(),
+            is_admin=True,  # NEW FIELD
+            role="admin",   # NEW FIELD
+            premium_features={
+                "ai_simulation": True,
+                "procedure_trainer": True,
+                "ai_job_match": True,
+                "usmle": True
+            }
         )
         
         db.add(user)
@@ -5538,10 +5550,6 @@ def create_admin_user(
     except Exception as e:
         print(f"❌ Failed to create admin: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create admin: {str(e)}")
-
-
-
-
 
 
 
