@@ -5085,36 +5085,21 @@ def check_daily_limit(
 
 
 @app.post("/audit/record-usage")
-def record_daily_usage(
-    data: dict = Body(...),
-    db: Session = Depends(get_db),
-    #current_user: User = Depends(get_current_active_user)
-):
-    """
-    Record usage AFTER successful generation.
-    """
-    
+def record_daily_usage(data: dict = Body(...), db: Session = Depends(get_db)):
     user_id = data.get("user_id")
     resource_type = data.get("resource_type")
     count = data.get("count", 1)
-   
-    
-   # if current_user.id != user_id:
-       # raise HTTPException(status_code=403, detail="Not authorized")
     
     today = date.today()
     
-    # Get today's record
     usage = db.query(DailyUsageTracking).filter(
         DailyUsageTracking.user_id == user_id,
         DailyUsageTracking.tracking_date == today
     ).first()
-
         
     if not usage:
         raise HTTPException(status_code=400, detail="No daily record found. Call check-limit first.")
            
-    # Field mapping for correct column names
     FIELD_MAPPING = {
         'simulation': 'simulations',
         'procedure': 'procedures',
@@ -5125,13 +5110,10 @@ def record_daily_usage(
     if not count_field:
         raise HTTPException(status_code=400, detail=f"Unknown resource type: {resource_type}")
       
-    
-    # Increment counter
     current_value = getattr(usage, count_field, 0)
     setattr(usage, count_field, current_value + count)
     usage.updated_at = datetime.utcnow()
 
-    
     db.commit()
        
     return {
@@ -5140,6 +5122,13 @@ def record_daily_usage(
         "new_count": getattr(usage, count_field),
         "date": str(today)
     }
+
+
+
+
+
+
+
 
 
 @app.get("/audit/user-usage/{user_id}")
