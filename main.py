@@ -4924,7 +4924,7 @@ def get_current_admin_user(token: str = Depends(oauth2_scheme), db: Session = De
 def check_daily_limit(
     data: dict = Body(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    #current_user: User = Depends(get_current_active_user)
 ):
     user_id = data.get("user_id")
     resource_type = data.get("resource_type")
@@ -5086,7 +5086,7 @@ def check_daily_limit(
 def record_daily_usage(
     data: dict = Body(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    #current_user: User = Depends(get_current_active_user)
 ):
     """
     Record usage AFTER successful generation.
