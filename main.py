@@ -4954,7 +4954,7 @@ def check_daily_limit(
     if usage:
         print(f"🔍 [CHECK-LIMIT] Found existing usage record (ID: {usage.id})")
         print(f"🔍 [CHECK-LIMIT] Record shows is_premium: {usage.is_premium}")
-        print(f"🔍 [CHECK-LIMIT] Current counts - simulations: {usage.simulations}")
+        print(f"🔍 [CHECK-LIMIT] Current counts - simulations: {usage.simulation_count}")
         
         # CRITICAL: Handle subscription changes during the day
         if usage.is_premium != is_currently_premium:
