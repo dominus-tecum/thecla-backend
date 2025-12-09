@@ -4330,6 +4330,7 @@ def generate_ai_simulation(
     import uuid
     from datetime import datetime
     import json
+    from openai import OpenAI  # ✅ ADD THIS IMPORT
     
     # Get parameters from frontend
     specialty = data.get("specialty", "emergency")
@@ -4343,10 +4344,13 @@ def generate_ai_simulation(
     
     try:
         # Get model from .env or use default
-        model = os.getenv("OPENAI_MODEL", "gpt-4")
+        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")  # ✅ Updated default
         
-        # ✅ CALL OPENAI WITH KEY FROM .env
-        response = openai.chat.completions.create(
+        # ✅ INITIALIZE OPENAI CLIENT
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        # ✅ CALL OPENAI WITH CORRECT SYNTAX
+        response = client.chat.completions.create(
             model=model,
             messages=[
                 {
@@ -4512,17 +4516,6 @@ def generate_ai_simulation(
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 @app.post("/ai/simulations/start")
 def start_simulation(
     data: dict = Body(...)  # REMOVED: current_user: User = Depends(get_current_active_user)
@@ -4548,6 +4541,8 @@ def start_simulation(
     }
     
     return {"attemptId": attempt_id}
+
+
 
 @app.post("/ai/simulations/decide")
 def process_decision(
