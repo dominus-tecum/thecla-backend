@@ -5,7 +5,8 @@ from docx import Document
 import requests
 
 # 🟢 CORRECT: Use plural exams endpoint for Smart Quiz
-API_URL = 'https://25d32be38252.ngrok-free.app/quiz/create'
+#API_URL = 'https://25d32be38252.ngrok-free.app/quiz/create'
+API_URL = 'https://thecla-backend.onrender.com/quiz/create'
 
 
 def extract_questions_from_text(text, exam_uuid):
@@ -159,7 +160,7 @@ def get_folder_path(discipline_id):
         'physiotherapist': r'Physiotherapists\Exams',
         'icu_nurse': r'Specialty Nurses\ICU\Exams',
         'emergency_nurse': r'Specialty Nurses\Emergency\Exams',
-        'neonatal_nurse': r'Specialty Nurses\Neonatal\Exams'
+        'neonatal_nurse': r'Specialty Nurses\Neonatal\Quiz'
     }
     
     folder = folder_mapping.get(discipline_id, 'Exams')

@@ -8,19 +8,25 @@ def extract_questions_from_text(text, exam_uuid):
     questions = []
     lines = [line.strip() for line in text.split('\n') if line.strip()]
     i = 0
-    question_count = 0  # Counter for question numbers
+    question_count = 0
     
     while i < len(lines):
-        q_match = re.match(r'^\d+\.\s+(.*)', lines[i])
-        if q_match:
-            question_count += 1  # Increment question counter
-            question_text = q_match.group(1)
-            options = []
+        # ✅ FIXED: Handle multi-line questions
+        if re.match(r'^\d+\.', lines[i]):
+            question_count += 1
+            
+            # Start building question text
+            question_text = lines[i][lines[i].find('.')+1:].strip()
             i += 1
             
-            # FIXED: Collect options with both . and ) formats
+            # ✅ ADD: Continue collecting question text until we hit options
+            while i < len(lines) and not re.match(r'^[a-dA-D][\.\)]', lines[i]):
+                question_text += ' ' + lines[i]
+                i += 1
+            
+            # Collect options
+            options = []
             while i < len(lines) and re.match(r'^[a-dA-D][\.\)]', lines[i]):
-                # FIXED: Remove both . and ) from options
                 option_text = re.sub(r'^[a-dA-D][\.\)]\s*', '', lines[i])
                 options.append(option_text)
                 i += 1
@@ -28,32 +34,29 @@ def extract_questions_from_text(text, exam_uuid):
             correct_idx = -1
             rationale = None
             
-            # FIXED: Find correct answer - handle both formats
+            # Find correct answer
             while i < len(lines) and (
                 re.match(r'^(?:✅\s*)?(?:Correct\s*)?Answer:', lines[i], re.IGNORECASE)
             ):
-                # FIXED: Handle both "Answer: B" and "Answer: B. Text" formats
                 ans_match = re.match(
                     r'^(?:✅\s*)?(?:Correct\s*)?Answer:\s*([a-dA-D])(?:\.|\)|\s|$)', lines[i], re.IGNORECASE
                 )
                 if ans_match:
                     correct_letter = ans_match.group(1).lower()
                     correct_idx = ['a', 'b', 'c', 'd'].index(correct_letter)
-                    # Move to next line after finding answer
                     i += 1
                     break
                 i += 1
             
-            # FIXED: BETTER RATIONALE EXTRACTION
+            # Find rationale
             if i < len(lines) and 'rationale:' in lines[i].lower():
-                # Extract everything after "Rationale:"
                 rationale_line = lines[i]
                 rationale = rationale_line.split('Rationale:', 1)[-1].split('rationale:', 1)[-1].strip()
-                print(f"🔍 FOUND RATIONALE: {rationale[:50]}...")  # Debug print
+                print(f"🔍 FOUND RATIONALE: {rationale[:50]}...")
                 i += 1
             
             if correct_idx == -1:
-                print(f"WARNING: No correct answer found for question: '{question_text}'")
+                print(f"WARNING: No correct answer found for question: '{question_text[:50]}...'")
             
             questions.append({
                 'id': str(uuid.uuid4()),
@@ -64,10 +67,9 @@ def extract_questions_from_text(text, exam_uuid):
                 'rationale': rationale
             })
             
-            # Debug: Show what we found WITH QUESTION NUMBER
-            print(f"📝 Question #{question_count}: {question_text[:50]}...")
+            # Debug output
+            print(f"📝 Question #{question_count}: {question_text[:80]}...")
             print(f"   Options: {len(options)}")
-            # FIXED: Show both index and letter for clarity
             correct_letter = chr(97 + correct_idx) if correct_idx != -1 else 'NOT FOUND'
             print(f"   Correct: {correct_idx} ({correct_letter.upper()})")
             print(f"   Rationale: {'YES' if rationale else 'NO'}")
@@ -75,6 +77,8 @@ def extract_questions_from_text(text, exam_uuid):
         else:
             i += 1
     return questions
+
+
 
 # NEW: PROFESSION SELECTION FOR ALL 8 DISCIPLINES
 def get_profession_from_user():
@@ -322,8 +326,8 @@ def upload_all_exams():
     print(f"📁 Files were processed from: {folder_path}")
 
 # MAIN UPLOAD SCRIPT
-#API_URL = 'https://thecla-backend.onrender.com/exams/'
-API_URL = 'https://53a15f117877.ngrok-free.app/exams/'
+API_URL = 'https://thecla-backend.onrender.com/exams/'
+#API_URL = 'https://53a15f117877.ngrok-free.app/exams/'
 
 def main():
     """Main menu for exam upload options"""

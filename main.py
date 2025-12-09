@@ -5140,20 +5140,14 @@ def record_daily_usage(
     """
     Record usage AFTER successful generation.
     """
-    user_id = data.get("user_id")
+    
+    user_id = current_user.id
     resource_type = data.get("resource_type")
     count = data.get("count", 1)
-
-    # ========== ADD DEBUG HERE ==========
-    print(f"🔍 [BACKEND AUDIT] record-usage called:")
-    print(f"   User ID: {user_id}")
-    print(f"   Resource: {resource_type}")
-    print(f"   Count: {count}")
-    print(f"   Current user: {current_user.id} ({current_user.email})")
-    # ========== END DEBUG ==========
+   
     
-    if current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+   # if current_user.id != user_id:
+       # raise HTTPException(status_code=403, detail="Not authorized")
     
     today = date.today()
     
@@ -5163,14 +5157,7 @@ def record_daily_usage(
         DailyUsageTracking.tracking_date == today
     ).first()
 
-    # ========== MORE DEBUG ==========
-    print(f"🔍 [BACKEND AUDIT] Today: {today}")
-    print(f"🔍 [BACKEND AUDIT] Found usage record: {usage}")
-    if usage:
-        print(f"🔍 [BACKEND AUDIT] Record ID: {usage.id}")
-        print(f"🔍 [BACKEND AUDIT] Current sim count: {usage.simulations}")
-    # ========== END DEBUG ==========
-    
+        
     if not usage:
         raise HTTPException(status_code=400, detail="No daily record found. Call check-limit first.")
            
@@ -5184,38 +5171,22 @@ def record_daily_usage(
     count_field = FIELD_MAPPING.get(resource_type)
     if not count_field:
         raise HTTPException(status_code=400, detail=f"Unknown resource type: {resource_type}")
-
-        # ========== DEBUG FIELD MAPPING ==========
-    print(f"🔍 [BACKEND AUDIT] Count field: {count_field}")
-    print(f"🔍 [BACKEND AUDIT] Before - {count_field}: {getattr(usage, count_field, 0)}")
-    # ========== END DEBUG ==========
+      
     
     # Increment counter
     current_value = getattr(usage, count_field, 0)
     setattr(usage, count_field, current_value + count)
     usage.updated_at = datetime.utcnow()
 
-    # ========== DEBUG AFTER UPDATE ==========
-    print(f"🔍 [BACKEND AUDIT] After - {count_field}: {getattr(usage, count_field)}")
-    print(f"🔍 [BACKEND AUDIT] Committing to database...")
-    # ========== END DEBUG ==========
     
     db.commit()
-
-    # ========== DEBUG FINAL ==========
-    print(f"✅ [BACKEND AUDIT] Success! New count: {getattr(usage, count_field)}")
-    # ========== END DEBUG ==========
-    
+       
     return {
         "success": True,
         "resource_type": resource_type,
         "new_count": getattr(usage, count_field),
         "date": str(today)
     }
-
-
-
-
 
 
 @app.get("/audit/user-usage/{user_id}")
