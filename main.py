@@ -4929,7 +4929,7 @@ def check_daily_limit(
     user_id = data.get("user_id")
     resource_type = data.get("resource_type")
     
-    print(f"🔍 [CHECK-LIMIT] User {user_id} ({current_user.email}) checking {resource_type}")
+    print(f"🔍 [CHECK-LIMIT] User {user_id} checking {resource_type}")
     
     if current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -5092,7 +5092,7 @@ def record_daily_usage(
     Record usage AFTER successful generation.
     """
     
-    user_id = current_user.id
+    user_id = data.get("user_id")
     resource_type = data.get("resource_type")
     count = data.get("count", 1)
    
