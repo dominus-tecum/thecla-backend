@@ -490,8 +490,6 @@ def list_notes_menu():
         input("\nPress Enter to continue...")
 
 
-
-
 def list_all_notes():
     """List all study notes (using /exam endpoint)"""
     print("\n📚 LISTING ALL STUDY NOTES")
@@ -521,10 +519,6 @@ def list_all_notes():
         print(f"💥 Error: {e}")
         return []
 
-
-
-
-
 def list_notes_by_discipline(discipline):
     """List study notes for a specific discipline (using /exam endpoint)"""
     print(f"\n📚 STUDY NOTES FOR {discipline.upper()}")
@@ -553,9 +547,6 @@ def list_notes_by_discipline(discipline):
     except Exception as e:
         print(f"💥 Error: {e}")
         return []
-
-
-
 
 def release_exam_menu():
     """Sub-menu for releasing exams by profession"""
@@ -602,11 +593,6 @@ def release_exam_menu():
         
         input("\n Press Enter to continue...")
 
-
-
-
-
-
 def unrelease_exam_menu():
     """Sub-menu for unreleasing exams by profession"""
     while True:
@@ -652,7 +638,223 @@ def unrelease_exam_menu():
         
         input("\n Press Enter to continue...")
 
+def bulk_release_exams():
+    """Release multiple exams at once using the same release logic"""
+    print("\n🚀 BULK RELEASE EXAMS")
+    print("=" * 60)
+    
+    # Get all unreleased exams
+    try:
+        response = requests.get(f"{API_URL}/admin/exams")
+        if response.status_code == 200:
+            all_exams = response.json()
+            
+            # Filter for unreleased plural exams (interactive exams)
+            unreleased_exams = [
+                exam for exam in all_exams 
+                if exam.get('source') == 'plural' 
+                and not exam.get('is_released')
+            ]
+            
+            if not unreleased_exams:
+                print("✅ All exams are already released!")
+                return
+            
+            # Display unreleased exams
+            print(f"📦 Found {len(unreleased_exams)} unreleased exams:\n")
+            for i, exam in enumerate(unreleased_exams, 1):
+                print(f"{i:2d}. {exam['title']}")
+                print(f"     ID: {exam['id']} | Discipline: {exam['discipline_id']}")
+                print(f"     Questions: {exam['question_count']}")
+                print()
+            
+            # Get user selection
+            selection = input("Enter exam numbers to release (comma-separated, 'all', or 'cancel'): ").strip().lower()
+            
+            if selection == 'cancel':
+                print("❌ Cancelled")
+                return
+            elif selection == 'all':
+                exam_ids = [exam['id'] for exam in unreleased_exams]
+                exam_titles = [exam['title'] for exam in unreleased_exams]
+            else:
+                try:
+                    numbers = [int(n.strip()) for n in selection.split(',')]
+                    exam_ids = []
+                    exam_titles = []
+                    for num in numbers:
+                        if 1 <= num <= len(unreleased_exams):
+                            exam = unreleased_exams[num - 1]
+                            exam_ids.append(exam['id'])
+                            exam_titles.append(exam['title'])
+                        else:
+                            print(f"⚠️ Invalid number: {num}")
+                except ValueError:
+                    print("❌ Invalid input. Use numbers like '1,3,5' or 'all'")
+                    return
+            
+            if not exam_ids:
+                print("❌ No exams selected")
+                return
+            
+            # Confirm bulk release
+            print(f"\n🎯 Will release {len(exam_ids)} exams:")
+            for title in exam_titles:
+                print(f"  - {title}")
+            
+            confirm = input(f"\nConfirm release of {len(exam_ids)} exams? (yes/no): ").strip().lower()
+            if confirm not in ['yes', 'y']:
+                print("❌ Cancelled")
+                return
+            
+            # Release each exam (using the same logic as release_exam function)
+            success_count = 0
+            failed_exams = []
+            
+            for i, exam_id in enumerate(exam_ids, 1):
+                print(f"\n[{i}/{len(exam_ids)}] Releasing exam: {exam_titles[i-1]}")
+                print("-" * 40)
+                
+                # Check for duplicates (same as in release_exam function)
+                try:
+                    dup_response = requests.get(f"{API_URL}/admin/exams")
+                    if dup_response.status_code == 200:
+                        all_exams_check = dup_response.json()
+                        current_exam = next((e for e in all_exams_check if e['id'] == exam_id), None)
+                        
+                        if current_exam:
+                            # Check for exams with same title that are already released
+                            duplicate_exams = [
+                                e for e in all_exams_check 
+                                if e['title'] == current_exam['title'] 
+                                and e['id'] != exam_id 
+                                and e['is_released']
+                            ]
+                            
+                            if duplicate_exams:
+                                print(f"⚠️  Found {len(duplicate_exams)} duplicate(s) for '{current_exam['title']}'")
+                                
+                                # Auto-replace duplicates in bulk mode
+                                for dup in duplicate_exams:
+                                    print(f"🗑️  Unreleasing duplicate: {dup['title']} (ID: {dup['id']})...")
+                                    unrelease_response = requests.post(f"{API_URL}/admin/exams/{dup['id']}/unrelease")
+                                    if unrelease_response.status_code == 200:
+                                        print(f"✅ Unreleased duplicate")
+                                    else:
+                                        print(f"❌ Failed to unrelease duplicate")
+                except Exception as e:
+                    print(f"⚠️  Error checking duplicates: {e}")
+                
+                # Release the exam
+                try:
+                    release_response = requests.post(f"{API_URL}/admin/exams/{exam_id}/release")
+                    
+                    if release_response.status_code == 200:
+                        result = release_response.json()
+                        print(f"✅ SUCCESS: {result['msg']}")
+                        success_count += 1
+                    else:
+                        error_msg = release_response.text[:100] if release_response.text else "No error message"
+                        print(f"❌ FAILED: {release_response.status_code} - {error_msg}")
+                        failed_exams.append({
+                            'id': exam_id,
+                            'title': exam_titles[i-1],
+                            'error': f"{release_response.status_code}: {error_msg}"
+                        })
+                        
+                except Exception as e:
+                    print(f"💥 ERROR: {str(e)}")
+                    failed_exams.append({
+                        'id': exam_id,
+                        'title': exam_titles[i-1],
+                        'error': str(e)
+                    })
+            
+            # Summary
+            print(f"\n" + "=" * 60)
+            print(f"📊 BULK RELEASE SUMMARY")
+            print("=" * 60)
+            print(f"✅ Successfully released: {success_count}/{len(exam_ids)}")
+            print(f"❌ Failed: {len(failed_exams)}")
+            
+            if failed_exams:
+                print("\n📋 Failed exams:")
+                for failed in failed_exams:
+                    print(f"  - {failed['title']} (ID: {failed['id']})")
+                    print(f"    Error: {failed['error'][:50]}...")
+            
+            return success_count
+            
+    except Exception as e:
+        print(f"💥 Error in bulk release: {e}")
+        return 0
 
+
+def bulk_release_by_discipline():
+    """Bulk release all unreleased exams for a specific discipline"""
+    print("\n🎯 BULK RELEASE BY DISCIPLINE")
+    print("=" * 60)
+    
+    disciplines = {
+        '1': 'gp',
+        '2': 'nurse', 
+        '3': 'midwife',
+        '4': 'lab_tech',
+        '5': 'physiotherapist',
+        '6': 'icu_nurse',
+        '7': 'emergency_nurse',
+        '8': 'neonatal_nurse'
+    }
+    
+    print("Select discipline:")
+    for key, disc in disciplines.items():
+        print(f"  {key}. {disc.upper()}")
+    
+    choice = input("\nEnter discipline number (1-8): ").strip()
+    
+    if choice not in disciplines:
+        print("❌ Invalid choice")
+        return
+    
+    discipline = disciplines[choice]
+    
+    try:
+        # Get exams for this discipline
+        response = requests.get(f"{API_URL}/admin/exams")
+        if response.status_code == 200:
+            all_exams = response.json()
+            
+            # Filter for unreleased plural exams for this discipline
+            unreleased_exams = [
+                exam for exam in all_exams 
+                if exam.get('source') == 'plural' 
+                and exam.get('discipline_id') == discipline
+                and not exam.get('is_released')
+            ]
+            
+            if not unreleased_exams:
+                print(f"✅ All {discipline} exams are already released!")
+                return
+            
+            print(f"\n📦 Found {len(unreleased_exams)} unreleased exams for {discipline.upper()}:\n")
+            for exam in unreleased_exams:
+                print(f"  - {exam['title']} (ID: {exam['id']})")
+            
+            confirm = input(f"\nRelease ALL {len(unreleased_exams)} {discipline.upper()} exams? (yes/no): ").strip().lower()
+            if confirm not in ['yes', 'y']:
+                print("❌ Cancelled")
+                return
+            
+            success_count = 0
+            for exam in unreleased_exams:
+                print(f"\n🚀 Releasing: {exam['title']}")
+                if release_exam(exam['id']):  # Using your existing release_exam function
+                    success_count += 1
+            
+            print(f"\n✅ Successfully released {success_count}/{len(unreleased_exams)} exams for {discipline.upper()}")
+            
+    except Exception as e:
+        print(f"💥 Error: {e}")
 
 def list_all_exams_for_release():
     """List all exams with IDs for release selection"""
@@ -914,26 +1116,6 @@ def delete_specific_exam():
     except Exception as e:
         print(f"Error: {e}")
         return False
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # ===== NEW: DELETE ALL EXAM FUNCTIONS =====
 
 # def delete_all_exams_in_discipline():
@@ -1114,47 +1296,56 @@ def manage_study_notes():
 
 
 
-
 def show_menu():
-    """Display admin menu"""
+    """Display admin menu with bulk options"""
     print("\n" + "=" * 60)
     print("🎛️  EXAM ADMIN CONTROL PANEL")
     print("=" * 60)
     print("1. 📋 List exams by profession")
     print("2. 📚 List notes by profession")
-    print("3. 🚀 Release exam by profession")  # UPDATED
-    print("4. ⏸️  Unrelease exam by profession")  # UPDATED
-    # REMOVED Options 5 & 6 (redundant)
-    print("5. 📊 System statistics")  # Changed from 7 to 5
-    print("6. 🔄 COMPARE DATABASES")  # Changed from 8 to 6
+    print("3. 🚀 Release exam by profession")
+    print("4. ⏸️  Unrelease exam by profession")
+    print("5. 📊 System statistics")
+    print("6. 🔄 COMPARE DATABASES")
     print("=" * 60)
     print("👥 USER-SPECIFIC EXAM MANAGEMENT")
     print("=" * 60)
-    print("7. 👥 List all users")  # Changed from 9 to 7
-    print("8. 👤 Manage exams for specific user")  # Changed from 10 to 8
-    print("9. ➕ Grant exam to multiple users")  # Changed from 11 to 9
-    print("10. 🔍 Check user's exam access")  # Changed from 12 to 10
+    print("7. 👥 List all users")
+    print("8. 👤 Manage exams for specific user")
+    print("9. ➕ Grant exam to multiple users")
+    print("10. 🔍 Check user's exam access")
+    print("=" * 60)
+    print("🚀 BULK OPERATIONS")
+    print("=" * 60)
+    print("11. 🚀 Bulk release exams (select multiple)")
+    print("12. 🎯 Bulk release by discipline (all unreleased)")
+    print("13. ⏸️ Bulk unrelease exams (select multiple)")
     print("=" * 60)
     print("🗑️  DELETE EXAMS")
     print("=" * 60)
-    print("11. 🗑️ Delete specific exam")  # Changed from 13 to 11
-    print("12. 🗑️ Delete all exams in discipline")  # Changed from 14 to 12
+    print("14. 🗑️ Delete specific exam")
+    print("15. 🗑️ Delete all exams in discipline")
     print("=" * 60)
     print("📚 STUDY NOTES MANAGEMENT")
     print("=" * 60)
-    print("13. 📚 Manage study notes")  # Changed from 15 to 13
+    print("16. 📚 Manage study notes")
     print("=" * 60)
-    print("14. 🚪 Exit")  # Changed from 16 to 14
+    print("17. 🧹 Clear Cache & Refresh")
     print("=" * 60)
+    print("18. 🚪 Exit")
+    print("=" * 60)
+
+
+
 
 
 def main():
-    """Main admin control loop"""
+    """Main admin control loop with bulk operations"""
     print("🔐 Welcome to Exam Admin Control Panel")
     
     while True:
         show_menu()
-        choice = input("\nEnter your choice (1-14): ").strip()  # Changed to 14
+        choice = input("\nEnter your choice (1-18): ").strip()
         
         if choice == '1':
             list_exams_menu()
@@ -1162,43 +1353,54 @@ def main():
         elif choice == '2':
             list_notes_menu()
         
-        elif choice == '3':  # UPDATED
+        elif choice == '3':
             release_exam_menu()
         
-        elif choice == '4':  # UPDATED
+        elif choice == '4':
             unrelease_exam_menu()
         
-        elif choice == '5':  # Changed from 7 to 5
+        elif choice == '5':
             get_system_stats()
         
-        elif choice == '6':  # Changed from 8 to 6
+        elif choice == '6':
             compare_databases()
         
-        # USER-SPECIFIC FUNCTIONS
-        elif choice == '7':  # Changed from 9 to 7
+        elif choice == '7':
             list_all_users()
         
-        elif choice == '8':  # Changed from 10 to 8
+        elif choice == '8':
             manage_user_specific_exams()
         
-        elif choice == '9':  # Changed from 11 to 9
+        elif choice == '9':
             grant_exam_to_multiple_users()
         
-        elif choice == '10':  # Changed from 12 to 10
+        elif choice == '10':
             user_id = input("Enter user ID to check access: ").strip()
             if user_id:
                 get_user_exam_access(user_id)
         
-        elif choice == '11':  # Changed from 13 to 11
+        elif choice == '11':
+            bulk_release_exams()
+        
+        elif choice == '12':
+            bulk_release_by_discipline()
+        
+        elif choice == '13':
+            bulk_unrelease_exams()
+        
+        elif choice == '14':
             delete_specific_exam()
         
-        elif choice == '12':  # Changed from 14 to 12
+        elif choice == '15':
             delete_all_exams_in_discipline()
         
-        elif choice == '13':  # Changed from 15 to 13
+        elif choice == '16':
             manage_study_notes()
         
-        elif choice == '14':  # Changed from 16 to 14
+        elif choice == '17':
+            clear_cache_and_refresh()
+        
+        elif choice == '18':
             print("👋 Goodbye!")
             break
         
@@ -1206,17 +1408,6 @@ def main():
             print("❌ Invalid choice. Please try again.")
         
         input("\nPress Enter to continue...")
-
-
-
-
-
-
-
-
-
-
-
 
 if __name__ == "__main__":
     try:

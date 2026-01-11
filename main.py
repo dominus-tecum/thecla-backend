@@ -466,7 +466,8 @@ def get_available_professions():
         {"value": "midwife", "label": "Midwife"},
         {"value": "lab_tech", "label": "Lab Technologist"},
         {"value": "physiotherapist", "label": "Physiotherapist"},
-        {"value": "specialist_nurse", "label": "Specialist Nurse"}
+        {"value": "specialist_nurse", "label": "Specialist Nurse"},
+        {"value": "pharmacist", "label": "Pharmacist"}
     ]
 
 def get_specialist_types():
@@ -1425,6 +1426,307 @@ def generate_intelligent_quiz(
 
 
 
+@app.post("/quiz/create-or-update")
+def create_or_update_quiz(
+    title: str = Body(...),
+    discipline: str = Body(...),
+    questions: List[dict] = Body(...),
+    #current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new quiz or UPDATE if one with same title/discipline already exists.
+    This is the duplicate-safe version.
+    """
+    try:
+        # 🟢 CHECK FOR EXISTING QUIZ
+        existing_quiz = db.query(Exam).filter(
+            Exam.title == title,
+            Exam.discipline_id == discipline,
+            Exam.source == "quiz"  # Only check quiz source
+        ).first()
+        
+        operation = "created"
+        
+        if existing_quiz:
+            # 🟢 QUIZ EXISTS - DELETE OLD ONE FIRST
+            print(f"🔄 Found existing quiz: {existing_quiz.id} - '{title}' for {discipline}")
+            operation = "replaced"
+            
+            # Delete all questions first (due to foreign key constraint)
+            db.query(Question).filter(Question.exam_id == existing_quiz.id).delete()
+            
+            # Delete the quiz
+            db.delete(existing_quiz)
+            db.commit()
+            print(f"🗑️  Deleted existing quiz: {existing_quiz.id}")
+        
+        # 🟢 CREATE NEW QUIZ (either new or replacement)
+        exam_id = f"quiz_{str(uuid.uuid4())[:8]}"
+        
+        # Create quiz exam
+        quiz_exam = Exam(
+            id=exam_id,
+            title=title,
+            discipline_id=discipline,
+            time_limit=45,
+            source="quiz",  # Special source for quizzes
+            is_released=True
+        )
+        db.add(quiz_exam)
+        db.commit()
+        
+        # Create quiz questions with proper labeling
+        created_count = 0
+        for i, q_data in enumerate(questions):
+            question = Question(
+                id=f"{exam_id}_q{i+1}",
+                exam_id=exam_id,
+                text=q_data.get("text", ""),
+                options=q_data.get("options", []),
+                correct_idx=q_data.get("correct_idx", 0),
+                rationale=q_data.get("rationale", ""),
+                topic=q_data.get("topic", "general"),  # Required for Smart Quiz
+                subtopic=q_data.get("subtopic", ""),
+                difficulty=q_data.get("difficulty", "intermediate")
+            )
+            db.add(question)
+            created_count += 1
+        
+        db.commit()
+                      
+        return {
+            "success": True,
+            "quiz_id": exam_id,
+            "title": title,
+            "discipline": discipline,
+            "questions_created": created_count,
+            "operation": operation,  # "created" or "replaced"
+            "message": f"Quiz '{title}' {operation} successfully"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create/update quiz: {str(e)}")
+
+
+
+@app.get("/quiz/check-duplicate")
+def check_duplicate_quiz(
+    title: str,
+    discipline: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Check if a quiz with given title and discipline already exists.
+    Useful for frontend to warn users before uploading.
+    """
+    existing_quiz = db.query(Exam).filter(
+        Exam.title == title,
+        Exam.discipline_id == discipline,
+        Exam.source == "quiz"
+    ).first()
+    
+    if existing_quiz:
+        question_count = db.query(Question).filter(Question.exam_id == existing_quiz.id).count()
+        return {
+            "exists": True,
+            "quiz_id": existing_quiz.id,
+            "title": existing_quiz.title,
+            "discipline": existing_quiz.discipline_id,
+            "question_count": question_count,
+            "created_at": existing_quiz.release_date
+        }
+    
+    return {"exists": False}
+
+
+
+
+
+
+@app.delete("/admin/quiz/discipline/{discipline_id}")
+def delete_all_quizzes_by_discipline_admin(
+    discipline_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    ADMIN ONLY: Delete all QUIZZES (not exams/notes) for a specific discipline
+    Only deletes quizzes where source='quiz'
+    """
+    # Verify admin privileges
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=403, 
+            detail="Administrator privileges required"
+        )
+    
+    try:
+        # Get all QUIZZES (source='quiz') for this discipline
+        quizzes_to_delete = db.query(Exam).filter(
+            Exam.source == "quiz",  # Only quizzes
+            Exam.discipline_id == discipline_id
+        ).all()
+        
+        if not quizzes_to_delete:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No quizzes found for discipline '{discipline_id}'"
+            )
+        
+        quiz_ids = [quiz.id for quiz in quizzes_to_delete]
+        quiz_titles = [quiz.title for quiz in quizzes_to_delete]
+        
+        # Delete related questions first
+        questions_deleted = db.query(Question).filter(
+            Question.exam_id.in_(quiz_ids)
+        ).delete(synchronize_session=False)
+        
+        # Delete the quizzes
+        quizzes_deleted = db.query(Exam).filter(
+            Exam.id.in_(quiz_ids)
+        ).delete(synchronize_session=False)
+        
+        db.commit()
+        
+        return {
+            "message": f"Deleted {quizzes_deleted} quizzes for discipline '{discipline_id}'",
+            "deleted_count": quizzes_deleted,
+            "questions_deleted": questions_deleted,
+            "quiz_titles": quiz_titles
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error deleting quizzes: {str(e)}"
+        )
+
+
+
+
+
+@app.put("/admin/quiz/discipline/{discipline_id}/replace")
+def replace_all_quizzes_in_discipline(
+    discipline_id: str,
+    quizzes_data: List[dict] = Body(...),  # List of new quizzes
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    ADMIN ONLY: Replace ALL quizzes in a discipline with new quizzes
+    1. Deletes all existing quizzes in the discipline
+    2. Creates new quizzes from provided data
+    """
+    # Verify admin privileges
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=403, 
+            detail="Administrator privileges required"
+        )
+    
+    try:
+        # Step 1: Delete all existing quizzes in this discipline
+        existing_quizzes = db.query(Exam).filter(
+            Exam.source == "quiz",
+            Exam.discipline_id == discipline_id
+        ).all()
+        
+        deleted_count = 0
+        deleted_questions = 0
+        
+        if existing_quizzes:
+            quiz_ids = [quiz.id for quiz in existing_quizzes]
+            
+            # Delete questions first
+            deleted_questions = db.query(Question).filter(
+                Question.exam_id.in_(quiz_ids)
+            ).delete(synchronize_session=False)
+            
+            # Delete quizzes
+            deleted_count = db.query(Exam).filter(
+                Exam.id.in_(quiz_ids)
+            ).delete(synchronize_session=False)
+            
+            db.commit()
+        
+        # Step 2: Create new quizzes from provided data
+        created_quizzes = []
+        total_questions = 0
+        
+        for quiz_data in quizzes_data:
+            # Generate unique quiz ID
+            quiz_id = f"quiz_{str(uuid.uuid4())[:8]}"
+            title = quiz_data.get("title", f"Quiz {len(created_quizzes) + 1}")
+            questions = quiz_data.get("questions", [])
+            
+            # Create quiz exam
+            new_quiz = Exam(
+                id=quiz_id,
+                title=title,
+                discipline_id=discipline_id,
+                time_limit=45,
+                source="quiz",
+                is_released=True
+            )
+            db.add(new_quiz)
+            db.flush()  # Flush to get ID
+            
+            # Create questions for this quiz
+            for i, q_data in enumerate(questions):
+                question = Question(
+                    id=f"{quiz_id}_q{i+1}",
+                    exam_id=quiz_id,
+                    text=q_data.get("text", ""),
+                    options=q_data.get("options", []),
+                    correct_idx=q_data.get("correct_idx", 0),
+                    rationale=q_data.get("rationale", ""),
+                    topic=q_data.get("topic", "general"),
+                    subtopic=q_data.get("subtopic", ""),
+                    difficulty=q_data.get("difficulty", "intermediate")
+                )
+                db.add(question)
+                total_questions += 1
+            
+            created_quizzes.append({
+                "id": quiz_id,
+                "title": title,
+                "question_count": len(questions)
+            })
+        
+        db.commit()
+        
+        return {
+            "message": f"Successfully replaced quizzes for discipline '{discipline_id}'",
+            "deleted": {
+                "quizzes": deleted_count,
+                "questions": deleted_questions
+            },
+            "created": {
+                "quizzes": len(created_quizzes),
+                "questions": total_questions
+            },
+            "new_quizzes": created_quizzes
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error replacing quizzes: {str(e)}"
+        )
+
+
+
+
+
+
+
+
+
+
 # =============================================================================
 # AI-HYBRID QUIZ ENDPOINT (5% AI / 95% Curated)
 # =============================================================================
@@ -2117,6 +2419,28 @@ validate_openai_key()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # =============================================================================
 # QUIZ ENDPOINTS - END
 # =============================================================================
@@ -2345,9 +2669,310 @@ def delete_study_notes_by_discipline(
         "discipline": discipline
     }
 
+
 # =============================================================================
 # EXAM ENDPOINTS - END
 # =============================================================================
+
+
+
+# =============================================================================
+# USMLE ENDPOINTS - START
+# =============================================================================
+
+
+@app.get("/exams/usmle")
+def list_usmle_exams(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """List all released USMLE exams for the current user"""
+    user_discipline_id = get_user_discipline_id(current_user)
+    
+    exams = db.query(Exam).filter(
+        Exam.source == "usmle",
+        Exam.discipline_id == user_discipline_id,  # Or could be fixed to "usmle"
+        Exam.is_released == True
+    ).all()
+    
+    return [
+        {
+            "id": exam.id,
+            "title": exam.title,
+            "discipline_id": exam.discipline_id,
+            "time_limit": exam.time_limit,
+            "source": exam.source,
+            "step": getattr(exam, 'step', '1')  # Add if exists
+        }
+        for exam in exams
+    ]
+
+
+
+
+@app.get("/exams/usmle/{exam_id}")
+def get_usmle_exam_with_questions(
+    exam_id: str, 
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    user_discipline_id = get_user_discipline_id(current_user)
+    
+    exam = db.query(Exam).filter(
+        Exam.id == exam_id, 
+        Exam.source == "usmle",
+        Exam.discipline_id == user_discipline_id,
+        Exam.is_released == True
+    ).first()
+    
+    if not exam:
+        raise HTTPException(status_code=404, detail="USMLE exam not found or access denied")
+    
+    questions = db.query(Question).filter(Question.exam_id == exam_id).all()
+    return {
+        "id": exam.id,
+        "title": exam.title,
+        "discipline_id": exam.discipline_id,
+        "time_limit": exam.time_limit,
+        "source": exam.source,
+        "step": getattr(exam, 'step', '1'),
+        "questions": [
+            {
+                "text": q.text,
+                "options": q.options,
+                "correct_idx": q.correct_idx,
+                "rationale": q.rationale,
+                "topic": q.topic,  # Add if exists
+                "difficulty": getattr(q, 'difficulty', 'advanced')
+            } for q in questions
+        ]
+    }
+
+
+
+@app.post("/exams/usmle/submit")
+def submit_usmle_exam_results(
+    exam_data: dict = Body(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Submit USMLE exam results - extends regular exam submission"""
+    try:
+        # Get exam details
+        exam = db.query(Exam).filter(Exam.id == exam_data.get("exam_id")).first()
+        if not exam:
+            raise HTTPException(status_code=404, detail="USMLE exam not found")
+        
+        # Extract data
+        score = exam_data.get("score", 0)
+        total_questions = exam_data.get("total_questions", 0)
+        step = exam_data.get("step", getattr(exam, 'step', '1'))
+        
+        # Calculate USMLE 3-digit score
+        three_digit_score = 140 + (score * 2.6)
+        
+        # Store in user_activity
+        activity = log_activity(db, current_user.id, "usmle_exam_completed", {
+            "exam_id": exam_data.get("exam_id"),
+            "exam_title": exam.title,
+            "step": step,
+            "score": score,
+            "three_digit_score": three_digit_score,
+            "total_questions": total_questions,
+            "percentage": score,
+            "passed": score >= 75,  # USMLE passing threshold
+            "timestamp": datetime.utcnow().isoformat(),
+            "user_answers": exam_data.get("user_answers", {}),
+            "blocks_completed": exam_data.get("blocks_completed", 1),
+            "time_spent": exam_data.get("time_spent", 0)
+        })
+        
+        return {
+            "message": "USMLE exam results saved successfully",
+            "activity_id": activity.id,
+            "score": score,
+            "three_digit_score": three_digit_score,
+            "step": step
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving USMLE results: {str(e)}")
+
+
+
+
+@app.post("/exams/usmle")
+def create_usmle_exam(
+    exam_data: dict = Body(...),
+    db: Session = Depends(get_db)
+):
+    """Create a new USMLE exam - matches your plural exam pattern"""
+    try:
+        exam_id = exam_data.get("id")
+        title = exam_data.get("title")
+        step = exam_data.get("step", "1")
+        time_limit = exam_data.get("time_limit", 60)  
+        source = "usmle"  # Fixed for USMLE
+        questions_data = exam_data.get("questions", [])
+        
+        # Check if exam already exists
+        existing_exam = db.query(Exam).filter(Exam.id == exam_id).first()
+        if existing_exam:
+            return {"msg": f"USMLE exam {exam_id} already exists"}
+        
+        # Create exam - follows your plural pattern
+        exam = Exam(
+            id=exam_id,
+            title=title,
+            discipline_id="usmle",  # Fixed discipline
+            time_limit=time_limit,
+            source=source,
+            is_released=False,  # Don't auto-release
+            step=step  # Add step field
+        )
+        db.add(exam)
+        db.commit()
+        
+        # Create questions - with USMLE fields
+        for q_data in questions_data:
+            question = Question(
+                id=q_data.get("id", str(uuid.uuid4())),
+                exam_id=exam_id,
+                text=q_data.get("text", ""),
+                options=q_data.get("options", []),
+                correct_idx=q_data.get("correct_idx", -1),
+                rationale=q_data.get("rationale"),
+                topic=q_data.get("topic", "general_medicine"),  # USMLE topics
+                difficulty=q_data.get("difficulty", "advanced")
+            )
+            db.add(question)
+        
+        db.commit()
+        
+        return {
+            "msg": "USMLE exam created successfully",
+            "exam_id": exam_id,
+            "step": step,
+            "questions_count": len(questions_data),
+            "time_limit_hours": f"{time_limit/60:.1f}"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creating USMLE exam: {str(e)}")
+
+
+
+
+@app.delete("/admin/exams/usmle/{exam_id}")
+def delete_usmle_exam(
+    exam_id: str,
+    db: Session = Depends(get_db)
+):
+    """Delete a USMLE exam - matches your delete pattern"""
+    exam = db.query(Exam).filter(
+        Exam.id == exam_id,
+        Exam.source == "usmle"
+    ).first()
+    
+    if not exam:
+        raise HTTPException(status_code=404, detail="USMLE exam not found")
+    
+    db.delete(exam)
+    db.commit()
+    
+    return {"msg": f"USMLE exam '{exam.title}' deleted successfully"}
+
+
+
+@app.get("/usmle/results")
+def get_user_usmle_results(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get all USMLE exam results for current user - similar to activity query"""
+    # Get USMLE exam activities
+    activities = db.query(UserActivity).filter(
+        UserActivity.user_id == current_user.id,
+        UserActivity.activity_type == "usmle_exam_completed"
+    ).order_by(UserActivity.created_at.desc()).all()
+    
+    results = []
+    for activity in activities:
+        details = activity.details
+        results.append({
+            "exam_id": details.get("exam_id"),
+            "exam_title": details.get("exam_title", "USMLE Exam"),
+            "step": details.get("step", "1"),
+            "score": details.get("score", 0),
+            "three_digit_score": details.get("three_digit_score", 0),
+            "total_questions": details.get("total_questions", 0),
+            "passed": details.get("passed", False),
+            "completed_at": activity.created_at.isoformat() if activity.created_at else details.get("timestamp"),
+            "user_answers_count": len(details.get("user_answers", {}))
+        })
+    
+    return results
+
+
+@app.get("/usmle/results/{exam_id}/detailed")
+def get_usmle_exam_detailed_review(
+    exam_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get detailed USMLE exam for review - combines exam and results"""
+    # Get the USMLE exam
+    exam = db.query(Exam).filter(
+        Exam.id == exam_id,
+        Exam.source == "usmle"
+    ).first()
+    
+    if not exam:
+        raise HTTPException(status_code=404, detail="USMLE exam not found")
+    
+    # Get questions
+    questions = db.query(Question).filter(Question.exam_id == exam_id).all()
+    
+    # Get user's result
+    activity = db.query(UserActivity).filter(
+        UserActivity.user_id == current_user.id,
+        UserActivity.activity_type == "usmle_exam_completed",
+        UserActivity.details["exam_id"].astext == exam_id
+    ).order_by(UserActivity.created_at.desc()).first()
+    
+    user_answers = activity.details.get("user_answers", {}) if activity else {}
+    
+    return {
+        "exam": {
+            "id": exam.id,
+            "title": exam.title,
+            "step": getattr(exam, 'step', '1'),
+            "time_limit": exam.time_limit
+        },
+        "performance": {
+            "score": activity.details.get("score", 0) if activity else 0,
+            "three_digit_score": activity.details.get("three_digit_score", 0) if activity else 0,
+            "passed": activity.details.get("passed", False) if activity else False
+        },
+        "questions": [
+            {
+                "index": idx,
+                "text": q.text,
+                "options": q.options,
+                "correct_idx": q.correct_idx,
+                "user_answer": user_answers.get(f"q{idx}", -1),
+                "rationale": q.rationale,
+                "topic": q.topic,
+                "difficulty": getattr(q, 'difficulty', 'advanced')
+            }
+            for idx, q in enumerate(questions)
+        ]
+    }
+
+
+
+
 
 # =============================================================================
 # STUDY NOTES ENDPOINTS START
@@ -2515,6 +3140,97 @@ def create_exam_singular(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error creating exam: {str(e)}")
+
+
+
+
+@app.delete("/admin/exam/discipline/{discipline_id}")
+def delete_all_exams_by_discipline_admin(
+    discipline_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    ADMIN ONLY: Delete all singular exams (notes/study materials) for a specific discipline
+    """
+    # Verify admin privileges
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=403, 
+            detail="Administrator privileges required"
+        )
+    
+    try:
+        # Get all singular exams for this discipline
+        exams_to_delete = db.query(Exam).filter(
+            Exam.source == "singular",
+            Exam.discipline_id == discipline_id
+        ).all()
+        
+        if not exams_to_delete:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No singular exams found for discipline '{discipline_id}'"
+            )
+        
+        exam_ids = [exam.id for exam in exams_to_delete]
+        
+        # Delete related questions first
+        db.query(Question).filter(
+            Question.exam_id.in_(exam_ids)
+        ).delete(synchronize_session=False)
+        
+        # Delete the exams
+        exams_deleted = db.query(Exam).filter(
+            Exam.id.in_(exam_ids)
+        ).delete(synchronize_session=False)
+        
+        db.commit()
+        
+        return {
+            "message": f"Deleted {exams_deleted} singular exams for discipline '{discipline_id}'",
+            "deleted_count": exams_deleted
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error deleting exams: {str(e)}"
+        )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

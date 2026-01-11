@@ -3,15 +3,83 @@ import re
 import uuid
 from docx import Document
 import requests
+import warnings
 
-# 🟢 CORRECT: Use plural exams endpoint for Smart Quiz
-#API_URL = 'https://25d32be38252.ngrok-free.app/quiz/create'
-API_URL = 'https://thecla-backend.onrender.com/quiz/create'
+# Suppress SSL warnings
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
 
-def extract_questions_from_text(text, exam_uuid):
+class QuizUploader:
+    """Smart quiz uploader with duplicate handling"""
+    
+    def __init__(self, base_url="https://thecla-backend.onrender.com"):
+        self.base_url = base_url
+        self.endpoints = {
+            'create': f"{base_url}/quiz/create",
+            'create_or_update': f"{base_url}/quiz/create-or-update",
+            'check': f"{base_url}/quiz/check-duplicate"
+        }
+    
+    def check_duplicate(self, title, discipline):
+        """Check if quiz already exists"""
+        try:
+            response = requests.get(
+                f"{self.endpoints['check']}?title={title}&discipline={discipline}",
+                verify=False,
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json().get('exists', False)
+        except Exception as e:
+            print(f"⚠️  Could not check for duplicates: {e}")
+        return False
+    
+    def upload_quiz(self, title, discipline, questions):
+        """Smart upload: check duplicates and use appropriate endpoint"""
+        
+        # Check if quiz exists
+        is_duplicate = self.check_duplicate(title, discipline)
+        
+        # Choose endpoint based on duplicate status
+        endpoint = self.endpoints['create_or_update'] if is_duplicate else self.endpoints['create']
+        operation = "replaced" if is_duplicate else "created"
+        
+        if is_duplicate:
+            print(f"🔄 Duplicate found! Replacing existing quiz: '{title}'")
+        else:
+            print(f"📤 Creating new quiz: '{title}'")
+        
+        # Prepare payload
+        payload = {
+            "title": title,
+            "discipline": discipline,
+            "questions": questions
+        }
+        
+        # Upload
+        try:
+            response = requests.post(endpoint, json=payload, verify=False, timeout=30)
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"✅ Successfully {operation} quiz: {title}")
+                print(f"🎯 Quiz ID: {result.get('quiz_id', 'N/A')}")
+                print(f"📝 Questions: {result.get('questions_created', len(questions))}")
+                return True, operation, result
+            else:
+                print(f"❌ Failed to {operation} quiz: {response.status_code}")
+                print(f"   Error: {response.text}")
+                return False, operation, None
+                
+        except Exception as e:
+            print(f"💥 Upload error: {e}")
+            return False, operation, None
+
+
+def extract_questions_from_text(text):
+    """Extract questions with multi-line support"""
     questions = []
-    lines = [line.strip() for line in text.split('\n') if line.strip()]
+    lines = [line.rstrip() for line in text.split('\n')]  # Keep empty lines
     i = 0
     question_count = 0
     
@@ -25,61 +93,95 @@ def extract_questions_from_text(text, exam_uuid):
             options = []
             i += 1
             
-            # Collect options
-            option_count = 0  # ✅ Define option_count here
-            while i < len(lines) and re.match(r'^[a-dA-D][\.\)]', lines[i]):
-                option_text = re.sub(r'^[a-dA-D][\.\)]\s*', '', lines[i])
-                options.append(option_text)
-                option_count += 1
+            # 🟢 MULTI-LINE QUESTION TEXT
+            while i < len(lines) and lines[i].strip() and not re.match(r'^[a-dA-D][\.\)]', lines[i]):
+                question_text += " " + lines[i].strip()
                 i += 1
             
-            print(f"   Found question {question_count} with {option_count} options")  # ✅ Now option_count is defined
+            # 🟢 MULTI-LINE OPTIONS
+            option_count = 0
+            while i < len(lines) and re.match(r'^[a-dA-D][\.\)]', lines[i]):
+                option_text = re.sub(r'^[a-dA-D][\.\)]\s*', '', lines[i])
+                i += 1
+                
+                # Continue reading multi-line option text
+                while (i < len(lines) and lines[i].strip() and 
+                       not re.match(r'^[a-dA-D][\.\)]', lines[i]) and
+                       not re.match(r'^(?:✅\s*)?(?:Correct\s*)?Answer:', lines[i], re.IGNORECASE) and
+                       'rationale:' not in lines[i].lower()):
+                    option_text += " " + lines[i].strip()
+                    i += 1
+                
+                options.append(option_text.strip())
+                option_count += 1
+            
+            print(f"   Found question {question_count} with {option_count} options")
             
             correct_idx = -1
             rationale = None
             
+            # Skip blank lines
+            while i < len(lines) and not lines[i].strip():
+                i += 1
+            
             # Find correct answer
-            while i < len(lines) and (
-                re.match(r'^(?:✅\s*)?(?:Correct\s*)?Answer:', lines[i], re.IGNORECASE)
-            ):
+            if i < len(lines) and re.match(r'^(?:✅\s*)?(?:Correct\s*)?Answer:', lines[i], re.IGNORECASE):
                 ans_match = re.match(
                     r'^(?:✅\s*)?(?:Correct\s*)?Answer:\s*([a-dA-D])(?:\.|\)|\s|$)', lines[i], re.IGNORECASE
                 )
                 if ans_match:
                     correct_letter = ans_match.group(1).lower()
-                    correct_idx = ['a', 'b', 'c', 'd'].index(correct_letter)
-                    i += 1
-                    break
+                    if correct_letter in ['a', 'b', 'c', 'd']:
+                        correct_idx = ['a', 'b', 'c', 'd'].index(correct_letter)
                 i += 1
             
-            # Extract rationale
+            # Skip blank lines
+            while i < len(lines) and not lines[i].strip():
+                i += 1
+            
+            # 🟢 MULTI-LINE RATIONALE
             if i < len(lines) and 'rationale:' in lines[i].lower():
-                rationale_line = lines[i]
-                rationale = rationale_line.split('Rationale:', 1)[-1].split('rationale:', 1)[-1].strip()
+                rationale_parts = []
+                rationale_text = lines[i].split('rationale:', 1)[-1].split('Rationale:', 1)[-1].strip()
+                if rationale_text:
+                    rationale_parts.append(rationale_text)
                 i += 1
+                
+                # Continue reading multi-line rationale
+                while (i < len(lines) and lines[i].strip() and 
+                       not re.match(r'^\d+\.\s+', lines[i])):
+                    rationale_parts.append(lines[i].strip())
+                    i += 1
+                
+                rationale = " ".join(rationale_parts)
             
-            # 🟢 AUTO-DETECT TOPIC for Smart Quiz
+            # 🟢 AUTO-DETECT TOPIC
             topic = auto_detect_topic(question_text)
             
-            questions.append({
-                'text': question_text,
-                'options': options,
-                'correct_idx': correct_idx,
-                'rationale': rationale,
-                'topic': topic,  # 🟢 REQUIRED FOR SMART QUIZ
-                'subtopic': '',  
-                'difficulty': auto_detect_difficulty(question_text, options)
-            })
-            
-            print(f"📝 Question #{question_count}: {question_text[:50]}...")
-            print(f"   Topic: {topic}")
-            print(f"   Correct answer: {correct_idx}")
-            
+            # Validate question
+            if len(options) >= 2 and 0 <= correct_idx < len(options):
+                questions.append({
+                    'text': question_text.strip(),
+                    'options': [opt.strip() for opt in options],
+                    'correct_idx': correct_idx,
+                    'rationale': rationale,
+                    'topic': topic,
+                    'subtopic': '',
+                    'difficulty': auto_detect_difficulty(question_text, options)
+                })
+                
+                if question_count <= 3:
+                    print(f"📝 Question #{question_count}: {question_text[:60]}...")
+                    print(f"   Topic: {topic}, Correct: {['A','B','C','D'][correct_idx]}")
+            else:
+                print(f"⚠️  Skipping invalid question #{question_count}")
+        
         else:
             i += 1
     
-    print(f"🎯 Total questions extracted: {len(questions)}")
+    print(f"🎯 Total valid questions extracted: {len(questions)}")
     return questions
+
 
 def auto_detect_topic(question_text):
     """Automatically detect topic for Smart Quiz"""
@@ -111,7 +213,9 @@ def auto_detect_topic(question_text):
     
     return "general"
 
+
 def auto_detect_difficulty(question_text, options):
+    """Auto-detect question difficulty"""
     text_length = len(question_text)
     word_count = len(question_text.split())
     
@@ -122,7 +226,9 @@ def auto_detect_difficulty(question_text, options):
     else:
         return "advanced"
 
+
 def get_profession_from_user():
+    """Get profession selection from user"""
     disciplines = {
         '1': ('gp', 'General Practitioner'),
         '2': ('nurse', 'Nurse'),
@@ -149,7 +255,9 @@ def get_profession_from_user():
         else:
             print("❌ Invalid choice. Please enter a number between 1-8")
 
+
 def get_folder_path(discipline_id):
+    """Get folder path for discipline"""
     base_path = r'd:\Thecla\Training Examinations'
     
     folder_mapping = {
@@ -172,136 +280,146 @@ def get_folder_path(discipline_id):
     
     return full_path
 
+
 def process_exam_file(filename, folder_path, discipline, discipline_name):
-    """Process and upload a single exam file for Smart Quiz"""
+    """Process and upload a single exam file"""
     doc_path = os.path.join(folder_path, filename)
+    
     try:
+        # Read document
         document = Document(doc_path)
         full_text = '\n'.join([para.text for para in document.paragraphs])
         
-        print(f"\n🔍 PROCESSING EXAM: {filename}")
-        print("=" * 50)
+        print(f"\n{'='*60}")
+        print(f"🔍 PROCESSING: {filename}")
+        print(f"{'='*60}")
         
-        exam_uuid = str(uuid.uuid4())
-        questions = extract_questions_from_text(full_text, exam_uuid)
-        exam_title = filename.replace('.docx', '')
+        # Extract questions
+        questions = extract_questions_from_text(full_text)
         
-        # 🟢 CORRECTED: Proper payload format for Smart Quiz
-        payload = {
-            "title": exam_title,
-            "discipline": discipline,  # ✅ This matches your backend
-            "questions": [
-                {
-                    "text": q["text"],
-                    "options": q["options"],
-                    "correct_idx": q["correct_idx"],
-                    "rationale": q.get("rationale", ""),
-                    "topic": q.get("topic", "general"),  # ✅ REQUIRED for Smart Quiz
-                    "subtopic": q.get("subtopic", ""),
-                    "difficulty": q.get("difficulty", "intermediate")
-                }
-                for q in questions
-            ]
-        }
-       
-        print(f"\n📤 Uploading {discipline_name} exam: {exam_title}")
-        print(f"🎯 Discipline: {discipline_name} ({discipline})")
-        print(f"❓ Questions: {len(questions)}")
-        print(f"📊 Topics: {set(q.get('topic', 'general') for q in questions)}")
+        if not questions:
+            print(f"❌ No valid questions found")
+            return False
         
-        # Debug: Show first question structure
-        if questions:
-            first_q = questions[0]
-            print(f"🔍 Sample question: {first_q['text'][:50]}...")
-            print(f"   Options: {len(first_q['options'])}")
-            print(f"   Correct index: {first_q['correct_idx']}")
-            print(f"   Topic: {first_q.get('topic', 'MISSING')}")
+        # Get quiz title
+        quiz_title = filename.replace('.docx', '')
         
-        # 🟢 Upload to quiz endpoint
-        response = requests.post(API_URL, json=payload, verify=False, timeout=30)
+        print(f"\n📊 Quiz Summary:")
+        print(f"   Title: {quiz_title}")
+        print(f"   Discipline: {discipline_name} ({discipline})")
+        print(f"   Questions: {len(questions)}")
         
-        if response.status_code == 200:
-            result = response.json()
-            print(f"✅ SUCCESS: {exam_title}")
-            print(f"🎯 Quiz ID: {result.get('quiz_id', result.get('exam_id', 'N/A'))}")
-            print(f"📝 Questions created: {result.get('questions_created', len(questions))}")
-            print(f"🚀 READY FOR SMART QUIZ!")
-        else:
-            print(f"❌ FAILED: {exam_title} - Status: {response.status_code}")
-            print(f"   Error: {response.text}")
-            
+        # Show topic distribution
+        topics = {}
+        for q in questions:
+            topic = q.get('topic', 'unknown')
+            topics[topic] = topics.get(topic, 0) + 1
+        print(f"   Topics: {', '.join([f'{k}({v})' for k, v in topics.items()])}")
+        
+        # Initialize uploader
+        uploader = QuizUploader()
+        
+        # Smart upload
+        success, operation, result = uploader.upload_quiz(
+            title=quiz_title,
+            discipline=discipline,
+            questions=questions
+        )
+        
+        return success
+        
     except Exception as e:
-        print(f"💥 Error processing {doc_path}: {e}")
+        print(f"💥 Error: {e}")
         import traceback
         traceback.print_exc()
+        return False
 
 
 def upload_single_exam():
-    print("\n🎯 SINGLE EXAM UPLOAD (for Smart Quiz)")
+    """Upload single exam"""
+    print("\n🎯 SINGLE EXAM UPLOAD")
     print("=" * 40)
     
     discipline, discipline_name = get_profession_from_user()
     folder_path = get_folder_path(discipline)
     
-    docx_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.docx') and not f.startswith('~$')]
+    # List files
+    docx_files = [f for f in os.listdir(folder_path) 
+                  if f.lower().endswith('.docx') and not f.startswith('~$')]
     
     if not docx_files:
-        print(f"❌ No .docx files found in: {folder_path}")
+        print(f"❌ No .docx files found")
         return
     
-    print(f"\n📄 Available exams in {discipline_name} folder:")
+    print(f"\n📄 Available exams:")
     for i, filename in enumerate(docx_files, 1):
         print(f"   {i}. {filename}")
     
+    # Get user selection
     while True:
         try:
-            choice = input(f"\nSelect exam file (1-{len(docx_files)}): ").strip()
-            file_index = int(choice) - 1
-            if 0 <= file_index < len(docx_files):
-                filename = docx_files[file_index]
+            choice = input(f"\nSelect file (1-{len(docx_files)}): ").strip()
+            idx = int(choice) - 1
+            if 0 <= idx < len(docx_files):
+                filename = docx_files[idx]
                 break
             else:
-                print(f"❌ Please enter a number between 1-{len(docx_files)}")
+                print(f"❌ Enter 1-{len(docx_files)}")
         except ValueError:
-            print("❌ Please enter a valid number")
+            print("❌ Enter a number")
     
+    # Process file
     process_exam_file(filename, folder_path, discipline, discipline_name)
 
+
 def upload_all_exams():
+    """Upload all exams in folder"""
+    print("\n🎯 BATCH UPLOAD")
+    print("=" * 40)
+    
     discipline, discipline_name = get_profession_from_user()
     folder_path = get_folder_path(discipline)
-
-    print(f"\n📁 Scanning folder: {folder_path}")
-    print(f"🎯 Uploading exams for Smart Quiz: {discipline_name}")
-
-    if not os.path.exists(folder_path):
-        print(f"❌ Folder not found: {folder_path}")
-        return
-
-    docx_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.docx') and not f.startswith('~$')]
-
+    
+    docx_files = [f for f in os.listdir(folder_path) 
+                  if f.lower().endswith('.docx') and not f.startswith('~$')]
+    
     if not docx_files:
-        print(f"❌ No .docx files found in: {folder_path}")
+        print(f"❌ No .docx files found")
         return
-
-    print(f"📄 Found {len(docx_files)} exam file(s) to process")
-
+    
+    print(f"\n📄 Found {len(docx_files)} file(s)")
+    
+    successful = 0
+    failed = 0
+    
     for filename in docx_files:
-        process_exam_file(filename, folder_path, discipline, discipline_name)
+        print(f"\n{'='*60}")
+        print(f"📋 Processing: {filename}")
+        
+        if process_exam_file(filename, folder_path, discipline, discipline_name):
+            successful += 1
+        else:
+            failed += 1
+    
+    print(f"\n{'='*60}")
+    print("📊 SUMMARY")
+    print(f"{'='*60}")
+    print(f"✅ Successful: {successful}")
+    print(f"❌ Failed: {failed}")
+    print(f"📄 Total: {len(docx_files)}")
 
-    print(f"\n🎉 Smart Quiz exam upload completed for {discipline_name}!")
-    print("🚀 Your exams are now ready for Smart Quiz generation!")
 
 def main():
-    print("🎯 SMART QUIZ EXAM UPLOAD MANAGER")
+    """Main menu"""
+    print("\n🎯 SMART QUIZ UPLOADER")
     print("=" * 50)
-    print("1. Upload a Specific Exam (for Smart Quiz)")
-    print("2. Upload All Exams in Folder (Batch)")
+    print("1. Upload Single Exam")
+    print("2. Upload All Exams")
     print("3. Exit")
     print("=" * 50)
     
     while True:
-        choice = input("\nSelect option (1-3): ").strip()
+        choice = input("\nSelect (1-3): ").strip()
         if choice == '1':
             upload_single_exam()
             break
@@ -309,10 +427,11 @@ def main():
             upload_all_exams()
             break
         elif choice == '3':
-            print("👋 Exiting...")
+            print("👋 Goodbye!")
             break
         else:
-            print("❌ Invalid choice. Please enter 1, 2, or 3")
+            print("❌ Enter 1, 2, or 3")
+
 
 if __name__ == "__main__":
     main()

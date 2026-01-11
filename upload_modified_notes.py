@@ -273,7 +273,9 @@ def get_profession_from_user():
         '5': ('physiotherapist', 'Physiotherapist'),
         '6': ('icu_nurse', 'ICU Nurse'),
         '7': ('emergency_nurse', 'Emergency Nurse'),
-        '8': ('neonatal_nurse', 'Neonatal Nurse')
+        '8': ('neonatal_nurse', 'Neonatal Nurse'),
+        '9': ('pharmacist', 'Pharmacist')
+
     }
     
     print("\n🎯 SELECT PROFESSION FOR READING MATERIALS:")
@@ -286,16 +288,17 @@ def get_profession_from_user():
     print("   6. ICU Nurse (icu_nurse)")
     print("   7. Emergency Nurse (emergency_nurse)")
     print("   8. Neonatal Nurse (neonatal_nurse)")
+    print("   9. Pharmacist (pharmacist)")
     print("=" * 50)
     
     while True:
-        choice = input("\nEnter your choice (1-8): ").strip()
+        choice = input("\nEnter your choice (1-9): ").strip()
         if choice in disciplines:
             discipline_id, discipline_name = disciplines[choice]
             print(f"✅ Selected: {discipline_name} (discipline_id: {discipline_id})")
             return discipline_id, discipline_name
         else:
-            print("❌ Invalid choice. Please enter a number between 1-8")
+            print("❌ Invalid choice. Please enter a number between 1-9")
 
 # DYNAMIC FOLDER PATHS FOR EACH PROFESSION'S READING MATERIALS
 def get_reading_materials_folder_path(discipline_id):
@@ -310,7 +313,8 @@ def get_reading_materials_folder_path(discipline_id):
         'physiotherapist': r'Physiotherapists\Reading Materials',
         'icu_nurse': r'Specialty Nurses\ICU\Reading Materials',
         'emergency_nurse': r'Specialty Nurses\Emergency\Reading Materials',
-        'neonatal_nurse': r'Neonate\Notes'
+        'neonatal_nurse': r'Neonate\Notes',
+        'pharmacist': r'Pharmacist\Notes'
     }
     
     folder = folder_mapping.get(discipline_id, 'Reading Materials')
@@ -412,7 +416,7 @@ def confirm_file_replacement(filename):
             print("❌ Please enter 'y' for yes or 'n' for no")
 
 # MAIN UPLOAD SCRIPT FOR READING MATERIALS
-#BASE_URL = "https://93c2af60c5f9.ngrok-free.app"
+#BASE_URL = "https://76f3bda79ccd.ngrok-free.app"
 BASE_URL = "https://thecla-backend.onrender.com"
 API_URL = f'{BASE_URL}/exam/'  # Singular endpoint
 

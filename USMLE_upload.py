@@ -201,7 +201,7 @@ def extract_questions_from_text(text, exam_uuid):
                 # Remove internal fields before adding
                 q_data = {
                     'id': self.current_q['id'],
-                    'exam_id': self.current_q['exam_id'],
+                    'exam_id': exam_uuid,
                     'text': self.current_q['text'],
                     'options': self.current_q['options'],
                     'correct_idx': self.current_q['correct_idx'],
@@ -272,59 +272,31 @@ def extract_questions_from_text(text, exam_uuid):
 
 
 
-# NEW: PROFESSION SELECTION FOR ALL 8 DISCIPLINES
+# CHANGED: ONLY USMLE OPTION
 def get_profession_from_user():
-    """Ask user which profession to upload exams for"""
+    """USMLE only"""
     disciplines = {
-        '1': ('gp', 'General Practitioner'),
-        '2': ('nurse', 'Nurse'),
-        '3': ('midwife', 'Midwife'),
-        '4': ('lab_tech', 'Lab Technologist'),
-        '5': ('physiotherapist', 'Physiotherapist'),
-        '6': ('icu_nurse', 'ICU Nurse'),
-        '7': ('emergency_nurse', 'Emergency Nurse'),
-        '8': ('neonatal_nurse', 'Neonatal Nurse'),
-        '9': ('pharmacist', 'Pharmacist')
-
+        '1': ('usmle', 'USMLE (Medical Licensing)'),
     }
     
-    print("\n🎯 SELECT PROFESSION FOR EXAM UPLOAD:")
+    print("\n🎯 USMLE EXAM UPLOAD")
     print("=" * 50)
-    print("   1. General Practitioner (gp)")
-    print("   2. Nurse (nurse)")
-    print("   3. Midwife (midwife)")
-    print("   4. Lab Technologist (lab_tech)")
-    print("   5. Physiotherapist (physiotherapist)")
-    print("   6. ICU Nurse (icu_nurse)")
-    print("   7. Emergency Nurse (emergency_nurse)")
-    print("   8. Neonatal Nurse (neonatal_nurse)")
-    print("   9. Pharmacist (pharmacist)")
+    print("   1. USMLE (Medical Licensing)")
     print("=" * 50)
     
-    while True:
-        choice = input("\nEnter your choice (1-9): ").strip()
-        if choice in disciplines:
-            discipline_id, discipline_name = disciplines[choice]
-            print(f"✅ Selected: {discipline_name} (discipline_id: {discipline_id})")
-            return discipline_id, discipline_name
-        else:
-            print("❌ Invalid choice. Please enter a number between 1-8")
+    # Auto-select option 1 (USMLE)
+    choice = '1'
+    discipline_id, discipline_name = disciplines[choice]
+    print(f"✅ Selected: {discipline_name} (discipline_id: {discipline_id})")
+    return discipline_id, discipline_name
 
-# NEW: DYNAMIC FOLDER PATHS FOR EACH PROFESSION
+# CHANGED: ONLY USMLE FOLDER PATH
 def get_folder_path(discipline_id):
-    """Get the appropriate folder path for each discipline"""
+    """Get USMLE folder path"""
     base_path = r'd:\Thecla\Training Examinations'
     
     folder_mapping = {
-        'gp': r'GP\Exams\Rationale',
-        'nurse': r'Nurses\Prometric Exam\Rationale',
-        'midwife': r'Midwives\Exams',
-        'lab_tech': r'Lab Technologists\Exams',
-        'physiotherapist': r'Physiotherapists\Exams',
-        'icu_nurse': r'Specialty Nurses\ICU\Exams',
-        'emergency_nurse': r'Specialty Nurses\Emergency\Exams',
-        'neonatal_nurse': r'Specialty Nurses\Neonatal\Exams',
-        'pharmacist': r'Pharmacist\Exams'
+        'usmle': r'USMLE\Exams',
     }
     
     folder = folder_mapping.get(discipline_id, 'Exams')
@@ -337,7 +309,7 @@ def get_folder_path(discipline_id):
     
     return full_path
 
-# NEW: CHECK FOR EXISTING EXAM
+# SAME: CHECK FOR EXISTING EXAM
 def check_existing_exam(exam_title, discipline_id):
     """Check if an exam with similar name already exists"""
     try:
@@ -358,7 +330,7 @@ def check_existing_exam(exam_title, discipline_id):
         print(f"⚠️  Warning: Could not check for existing exams: {e}")
         return None
 
-# NEW: DELETE EXISTING EXAM
+# SAME: DELETE EXISTING EXAM
 def delete_existing_exam(exam_id):
     """Delete an existing exam"""
     try:
@@ -369,7 +341,7 @@ def delete_existing_exam(exam_id):
         print(f"❌ Error deleting existing exam: {e}")
         return False
 
-# NEW: CONFIRM OVERWRITE
+# SAME: CONFIRM OVERWRITE
 def confirm_overwrite(exam_title, existing_exam):
     """Ask user for confirmation to overwrite existing exam"""
     print(f"\n⚠️  DUPLICATE EXAM FOUND!")
@@ -386,13 +358,13 @@ def confirm_overwrite(exam_title, existing_exam):
         else:
             print("❌ Please enter 'y' for yes or 'n' for no")
 
-# NEW: UPLOAD SINGLE EXAM FILE
+# CHANGED: UPLOAD TO USMLE ENDPOINT
 def upload_single_exam():
-    """Upload or update a specific exam file"""
-    print("\n🎯 SINGLE EXAM UPLOAD")
+    """Upload or update a USMLE exam file"""
+    print("\n🎯 USMLE EXAM UPLOAD")
     print("=" * 40)
     
-    # Get profession
+    # Get USMLE profession
     discipline_id, discipline_name = get_profession_from_user()
     folder_path = get_folder_path(discipline_id)
     
@@ -403,14 +375,14 @@ def upload_single_exam():
         print(f"❌ No .docx files found in: {folder_path}")
         return
     
-    print(f"\n📄 Available exams in {discipline_name} folder:")
+    print(f"\n📄 Available USMLE exams:")
     for i, filename in enumerate(docx_files, 1):
         print(f"   {i}. {filename}")
     
     # Let user select file
     while True:
         try:
-            choice = input(f"\nSelect exam file (1-{len(docx_files)}): ").strip()
+            choice = input(f"\nSelect USMLE exam file (1-{len(docx_files)}): ").strip()
             file_index = int(choice) - 1
             if 0 <= file_index < len(docx_files):
                 filename = docx_files[file_index]
@@ -423,9 +395,9 @@ def upload_single_exam():
     # Process the selected file
     process_exam_file(filename, folder_path, discipline_id, discipline_name)
 
-# NEW: PROCESS SINGLE EXAM FILE
+# CHANGED: UPLOAD TO USMLE ENDPOINT
 def process_exam_file(filename, folder_path, discipline_id, discipline_name):
-    """Process and upload a single exam file"""
+    """Process and upload a USMLE exam file"""
     doc_path = os.path.join(folder_path, filename)
     try:
         exam_uuid = str(uuid.uuid4())
@@ -433,51 +405,53 @@ def process_exam_file(filename, folder_path, discipline_id, discipline_name):
         full_text = '\n'.join([para.text for para in document.paragraphs])
         
         # DEBUG: Show raw text structure
-        print(f"\n🔍 PROCESSING: {filename}")
+        print(f"\n🔍 PROCESSING USMLE EXAM: {filename}")
         print("=" * 50)
         
         questions = extract_questions_from_text(full_text, exam_uuid)
         exam_title = filename.replace('.docx', '')
         
-        # ✅ FIXED: CHECK FOR EXISTING EXAM (with better debugging)
-        print(f"🔍 Checking for existing exam: '{exam_title}' in {discipline_id}")
+        # ✅ CHECK FOR EXISTING EXAM
+        print(f"🔍 Checking for existing USMLE exam: '{exam_title}'")
         existing_exam = check_existing_exam(exam_title, discipline_id)
         
         if existing_exam:
-            print(f"⚠️  FOUND EXISTING EXAM: {existing_exam.get('title')} (ID: {existing_exam.get('id')})")
+            print(f"⚠️  FOUND EXISTING USMLE EXAM: {existing_exam.get('title')} (ID: {existing_exam.get('id')})")
             if confirm_overwrite(exam_title, existing_exam):
-                print("🗑️  Deleting existing exam...")
+                print("🗑️  Deleting existing USMLE exam...")
                 if delete_existing_exam(existing_exam['id']):
-                    print("✅ Existing exam deleted successfully")
+                    print("✅ Existing USMLE exam deleted successfully")
                 else:
-                    print("❌ Failed to delete existing exam. Skipping upload.")
+                    print("❌ Failed to delete existing USMLE exam. Skipping upload.")
                     return
             else:
-                print("⏭️  Skipping upload - keeping existing exam")
+                print("⏭️  Skipping upload - keeping existing USMLE exam")
                 return
         else:
-            print("✅ No existing exam found - proceeding with upload")
+            print("✅ No existing USMLE exam found - proceeding with upload")
         
-        # Prepare payload
+        # SAME PAYLOAD STRUCTURE, but goes to USMLE endpoint
         payload = {
             "id": exam_uuid,
             "title": exam_title,
             "discipline_id": discipline_id,
             "time_limit": 50,
-            "source": "plural",
+            "source": "usmle",
             "is_released": False,
             "questions": questions
         }
         
-        print(f"\n📤 Uploading {discipline_name} exam: {exam_title}")
+        print(f"\n📤 Uploading USMLE exam: {exam_title}")
         print(f"🎯 Discipline: {discipline_name} ({discipline_id})")
         print(f"❓ Questions: {len(questions)}")
         
         questions_with_rationale = [q for q in questions if q.get('rationale')]
         print(f"📚 Questions with rationale: {len(questions_with_rationale)}/{len(questions)}")
         
-        # Upload exam
-        response = requests.post(API_URL, json=payload)
+        # CHANGED: Upload to USMLE endpoint
+        usmle_endpoint = f'{API_URL.rstrip("/")}/usmle'
+        response = requests.post(usmle_endpoint, json=payload)
+        
         if response.status_code == 200:
             print(f"✅ SUCCESS: {exam_title} - Status: {response.status_code}")
             print(f"💡 Remember to release this exam via /admin/exams/{exam_uuid}/release")
@@ -486,51 +460,48 @@ def process_exam_file(filename, folder_path, discipline_id, discipline_name):
             print(f"   Error: {response.text}")
             
     except Exception as e:
-        print(f"💥 Error processing {doc_path}: {e}")
+        print(f"💥 Error processing USMLE exam {doc_path}: {e}")
 
 
 
-# NEW: BATCH UPLOAD ALL EXAMS
+# SAME
 def upload_all_exams():
-    """Upload all exams in a folder (original functionality)"""
+    """Upload all USMLE exams in folder"""
     discipline_id, discipline_name = get_profession_from_user()
     folder_path = get_folder_path(discipline_id)
 
-    print(f"\n📁 Scanning folder: {folder_path}")
-    print(f"🎯 Uploading exams for: {discipline_name}")
+    print(f"\n📁 Scanning USMLE folder: {folder_path}")
+    print(f"🎯 Uploading USMLE exams")
 
     # Check if folder exists
     if not os.path.exists(folder_path):
-        print(f"❌ Folder not found: {folder_path}")
-        print("💡 Please create the folder and add exam documents, or check the path configuration.")
+        print(f"❌ USMLE folder not found: {folder_path}")
+        print("💡 Please create the folder and add USMLE exam documents.")
         return
 
     # Get all .docx files in the folder
     docx_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.docx') and not f.startswith('~$')]
 
     if not docx_files:
-        print(f"❌ No .docx files found in: {folder_path}")
-        print("💡 Please add exam documents (.docx files) to the folder and try again.")
+        print(f"❌ No USMLE .docx files found in: {folder_path}")
+        print("💡 Please add USMLE exam documents (.docx files) to the folder.")
         return
 
-    print(f"📄 Found {len(docx_files)} exam file(s) to process")
+    print(f"📄 Found {len(docx_files)} USMLE exam file(s) to process")
 
     for filename in docx_files:
         process_exam_file(filename, folder_path, discipline_id, discipline_name)
 
-    print(f"\n🎉 Upload session completed for {discipline_name}!")
+    print(f"\n🎉 USMLE upload session completed!")
     print(f"📁 Files were processed from: {folder_path}")
 
-# MAIN UPLOAD SCRIPT
-API_URL = 'https://thecla-backend.onrender.com/exams/'
-#API_URL = 'https://76f3bda79ccd.ngrok-free.app/exams/'
-
+# CHANGED: USMLE-SPECIFIC MENU
 def main():
-    """Main menu for exam upload options"""
-    print("🎯 EXAM UPLOAD MANAGER")
+    """Main menu for USMLE exam upload"""
+    print("🎯 USMLE EXAM UPLOAD MANAGER")
     print("=" * 40)
-    print("1. Upload/Update a Specific Exam")
-    print("2. Upload All Exams in Folder (Batch)")
+    print("1. Upload/Update a Specific USMLE Exam")
+    print("2. Upload All USMLE Exams in Folder (Batch)")
     print("3. Exit")
     print("=" * 40)
     
@@ -543,10 +514,13 @@ def main():
             upload_all_exams()
             break
         elif choice == '3':
-            print("👋 Exiting...")
+            print("👋 Exiting USMLE upload...")
             break
         else:
             print("❌ Invalid choice. Please enter 1, 2, or 3")
+
+# SAME API URL
+API_URL = 'https://thecla-backend.onrender.com/exams/'
 
 if __name__ == "__main__":
     main()
