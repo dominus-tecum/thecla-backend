@@ -190,7 +190,9 @@ def auto_detect_topic(question_text):
     topic_keywords = {
         "pharmacology": ["medication", "drug", "dose", "prescription", "side effect", "contraindication",
                         "antibiotic", "analgesic", "therapeutic", "interaction", "overdose", "administration",
-                        "dosage", "adverse", "toxicity", "pharmacology", "pharmacokinetic", "warfarin", "insulin"],
+                        "dosage", "adverse", "toxicity", "pharmacology", "pharmacokinetic", "warfarin", "insulin",
+                        "pharmacy", "formulation", "compounding", "dispensing", "medicinal", "drug interaction",
+                        "drug therapy", "clinical pharmacy", "pharmaceutics", "biopharmaceutics", "pharmacogenomics"],
         "anatomy": ["anatomy", "organ", "bone", "muscle", "nerve", "artery", "vein", "heart", "lung",
                    "liver", "kidney", "brain", "spinal", "joint", "tissue", "structure"],
         "physiology": ["physiology", "function", "metabolism", "hormone", "system", "process", "mechanism",
@@ -204,7 +206,11 @@ def auto_detect_topic(question_text):
         "emergency_care": ["emergency", "critical", "urgent", "resuscitation", "triage", "crisis", "acute",
                           "life-threatening", "cardiac arrest", "shock", "trauma"],
         "diagnosis": ["diagnosis", "diagnose", "test", "result", "interpret", "finding", "symptom", "sign",
-                     "laboratory", "imaging", "x-ray", "blood test", "diagnostic"]
+                     "laboratory", "imaging", "x-ray", "blood test", "diagnostic"],
+        "pharmacy_law": ["law", "legal", "regulation", "controlled substance", "dea", "fda", "compliance",
+                        "prescription law", "drug scheduling", "professional regulation"],
+        "pharmacy_management": ["inventory", "management", "supply chain", "procurement", "storage",
+                               "quality control", "pharmacy administration", "business management"]
     }
     
     for topic, keywords in topic_keywords.items():
@@ -237,7 +243,8 @@ def get_profession_from_user():
         '5': ('physiotherapist', 'Physiotherapist'),
         '6': ('icu_nurse', 'ICU Nurse'),
         '7': ('emergency_nurse', 'Emergency Nurse'),
-        '8': ('neonatal_nurse', 'Neonatal Nurse')
+        '8': ('neonatal_nurse', 'Neonatal Nurse'),
+        '9': ('pharmacist', 'Pharmacist')  # NEW
     }
     
     print("\n🎯 SELECT PROFESSION FOR QUIZ UPLOAD:")
@@ -247,13 +254,13 @@ def get_profession_from_user():
     print("=" * 50)
     
     while True:
-        choice = input("\nEnter your choice (1-8): ").strip()
+        choice = input("\nEnter your choice (1-9): ").strip()  # UPDATED: 1-9
         if choice in disciplines:
             discipline_id, discipline_name = disciplines[choice]
             print(f"✅ Selected: {discipline_name} (discipline: {discipline_id})")
             return discipline_id, discipline_name
         else:
-            print("❌ Invalid choice. Please enter a number between 1-8")
+            print("❌ Invalid choice. Please enter a number between 1-9")  # UPDATED
 
 
 def get_folder_path(discipline_id):
@@ -263,12 +270,13 @@ def get_folder_path(discipline_id):
     folder_mapping = {
         'gp': r'GP\Exams\Quiz',
         'nurse': r'Nurses\Prometric Exam\Quiz',
-        'midwife': r'Midwives\Exams',
-        'lab_tech': r'Lab Technologists\Exams',
-        'physiotherapist': r'Physiotherapists\Exams',
-        'icu_nurse': r'Specialty Nurses\ICU\Exams',
-        'emergency_nurse': r'Specialty Nurses\Emergency\Exams',
-        'neonatal_nurse': r'Specialty Nurses\Neonatal\Quiz'
+        'midwife': r'Midwives\Quiz',
+        'lab_tech': r'Lab Technologists\Quiz',
+        'physiotherapist': r'Physiotherapists\Quiz',
+        'icu_nurse': r'Specialty Nurses\ICU\Quiz',
+        'emergency_nurse': r'Specialty Nurses\Emergency\Quiz',
+        'neonatal_nurse': r'Specialty Nurses\Neonatal\Quiz',
+        'pharmacist': r'Pharmacist\Quiz'  # NEW
     }
     
     folder = folder_mapping.get(discipline_id, 'Exams')

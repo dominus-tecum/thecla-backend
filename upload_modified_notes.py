@@ -8,6 +8,20 @@ import requests
 import PyPDF2
 from PIL import Image
 import io
+import re
+
+def extract_chapter_number(filename):
+    """Extract chapter number from filename for sorting"""
+    # Match patterns like "Chapter 1", "Chapter 10", "Chapter 2"
+    match = re.search(r'Chapter\s+(\d+)', filename, re.IGNORECASE)
+    if match:
+        return int(match.group(1))
+    return 999  # Put files without chapter number at the end
+
+def sort_files_by_chapter(files):
+    """Sort files by chapter number naturally"""
+    return sorted(files, key=extract_chapter_number)
+
 
 def extract_images_from_docx(doc_path, exam_title):
     """Extract images from Word document and prepare for upload"""
@@ -309,7 +323,7 @@ def get_reading_materials_folder_path(discipline_id):
         'gp': r'GP\Study Notes',
         'nurse': r'Nurses\Study Notes',
         'midwife': r'Midwives\Reading Materials',
-        'lab_tech': r'Lab Technologists\Reading Materials',
+        'lab_tech': r'Lab Technologists\Radiology Notes',
         'physiotherapist': r'Physiotherapists\Reading Materials',
         'icu_nurse': r'Specialty Nurses\ICU\Reading Materials',
         'emergency_nurse': r'Specialty Nurses\Emergency\Reading Materials',
@@ -438,6 +452,11 @@ docx_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.docx') 
 pdf_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.pdf')]
 
 all_files = docx_files + pdf_files
+
+# Sort by chapter number
+all_files = sort_files_by_chapter(all_files)  # ← ADD THIS LINE
+
+
 
 if not all_files:
     print(f"❌ No document files found in: {folder_path}")

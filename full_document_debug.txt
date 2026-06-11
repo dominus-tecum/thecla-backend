@@ -1,0 +1,499 @@
+
+
+===== Page 1 =====
+
+Principles of nursing 
+assessment
+Naomi Elliott
+School of Nursing and Midwifery, Trinity College Dublin, Dublin, Ireland1
+Contents
+Introduction  3
+The purpose of nursing assessment  3
+Assessment frameworks  4
+Methods of assessment  6
+Rapid assessment of the acutely  
+ill patient  8Documenting patient assessment and  
+record-keeping  9
+Conclusion  10
+References  10
+This chapter will examine the WHY, WHAT, HOW questions of nursing assessment. It will enable you 
+to ask:
+• Why  – to explain the purpose of nursing assessment and why it is vital to quality patient care
+• What  – to consider what patient information is collected and the rationale for using an assessment 
+framework
+• How  – to identify a range of methods available to assess patients and collect information that 
+support clinical decision-making and individualised patient care plans.Learning outcomes
+Fundamentals of Medical-Surgical Nursing: A Systems Approach , First Edition. Edited by Anne-Marie Brady, Catherine McCabe, 
+and Margaret McCann.
+© 2014 John Wiley & Sons, Ltd. Published 2014 by John Wiley & Sons, Ltd.
+
+===== Page 2 =====
+
+Principles of nursing assessment  Chapter 1
+3Introduction
+Assessment is the first step in determining the condition of the patient’s health and their immediate 
+and long-term needs. The nursing assessment of patients on admission to hospital or on attendance 
+at clinics is key to clinical decision-making and to planning patient care that takes account of the indi -
+vidual patients’ needs and circumstances. Nurses have responsibility for carrying out the initial and 
+ongoing patient assessments, for initiating interventions that take patients’ needs into consideration 
+and for evaluating the effectiveness of these interventions.
+The nursing assessment is one component within a larger, multidisciplinary team assessment during 
+which the patient is assessed by different healthcare professionals as part of the care pathway and 
+patient referral process. A multifactorial assessment of the older person for falls, for example, can 
+involve the nurse, doctor, physiotherapist, occupational therapist, optician and other healthcare profes -
+sionals working in specialist areas of practice such as cardiac assessment. As a member of the multi -
+disciplinary team, the nurse often plays a key role in coordinating the patient assessment and ensuring 
+that appropriate referrals are made and followed up.
+The principles of nursing assessment presented in this chapter are in line with the national guidelines 
+from the professional nursing board in Ireland, An Bord Altranais , and in the UK the Nursing and Mid -
+wifery Council (NMC). The principles need to be read in conjunction with local policies and procedures 
+for the nursing assessment, which are usually set by the hospital or healthcare employer. At ward or 
+unit level, more specific assessment procedures may apply; for example, cerebrovascular or stroke units 
+may include an assessment of swallowing and mood as part of the assessment of a patient newly 
+diagnosed with a cerebrovascular accident – a stroke.
+The purpose of nursing assessment
+Assessment is the first stage in the nursing process and is key to developing a care plan that is tailored 
+to a patient’s individual needs (Figure 1.1).
+The purpose of assessment is to achieve the following:
+• Obtain baseline data and track changes. On admission to hospital or on a first visit to the clinic, 
+it is important to carry out a comprehensive assessment of the patient to establish a set of baseline 
+data against which subsequent assessments can be compared and any changes indicating a dete -
+rioration or improvement in the patient’s condition tracked.
+• Early recognition of the critically ill or deteriorating patient. Identifying patients who are ‘at 
+risk’ is key to initiating a rapid response from the medical emergency or rapid response team. 
+‘Track and Trigger’ (e.g. Alert® and other early warning systems) incorporate objective physiologi -
+cal and subjective criteria that can be used to support the nurse’s decision about when to call the 
+medical team for help and avert more serious patient emergencies (National Institute for Health 
+and Clinical Excellence [NICE], 2007). If a Track and Trigger system has not been set up in the 
+hospital, a nurse who is concerned about a patient should take urgent action and notify the 
+medical team.
+• Risk assessment. Assessment is the first step in preventing complications, the aim being to iden -
+tify patients who are ‘at risk’ of developing complications associated with their healthcare problem, 
+hospitalisation and reduced mobility. Key areas for risk assessment include pressure ulcers, infec -
+tion, falls and constipation. Local hospital policy may include risk assessment tools as part of the 
+admission procedure, for example the Braden, Waterlow and Norton scores to identify patients at 
+risk of pressure ulcers and to activate an action plan and interventions to prevent pressure ulcers 
+developing.
+• Screening for health problems. Nursing assessment provides an ideal opportunity for health 
+promotion and for screening patients for risk factors associated with obesity, cancer, cardiovascular 
+disease, diabetes mellitus and other major Irish and UK health problems. It also provides the 
+opportunity to screen for specific problems such as emotional distress or organisms important in 
+infection control (e.g. methicillin-resistant Staphylococcus aureus  [MRSA] and vancomycin-resistant 
+Enterococcus  [VRE]).
+
+===== Page 3 =====
+
+Part 1  Common Principles Underlying Medical and Surgical Nursing Practice
+4
+• Identify actual and potential problems and prioritise care. The patient’s current problems (actual 
+problems) and problems that could develop in the future (potential problems) need to be identi -
+fied so that the care plan can be tailored to individual patient needs. Importantly, once the range 
+of patient problems has been identified, care can be prioritised so that major problems are dealt 
+with first.
+• Care planning, tailored to individual patient needs. The purpose of assessment is not only to 
+determine and document the patient’s current condition, but also to provide evidence for the 
+planning and provision of nursing care. Although standardised care plans are available in some 
+units or hospitals, the nursing actions that are required to meet a patient’s needs and problems 
+should be tailored to take account of individual patient needs.
+• Discharge planning. Patient assessment also includes the early identification of patients’ needs 
+for forward planning and organising the supports and community services necessary to facilitate 
+a timely discharge from hospital. Recent trends indicate that patients’ stay in hospital is shortening, 
+the use of day surgery is increasing, and policies on early discharge and discharge planning are 
+setting the standards for healthcare practice (Capelastegui et al . 2008; Saczynski et al . 2010; Shep -
+perd et al . 2010). Although the reasons for a delay in discharging the patient home from hospital 
+are multifactorial, patient assessment that includes information about the patient’s home and 
+social circumstances, family and community supports will help prevent problems arising from a 
+poor knowledge of a patient’s home situation or the support available, and will avert delays related 
+to non-medical reasons.
+Assessment frameworks
+An important principle underpinning the nursing approach to patient assessment is that it is systematic, 
+comprehensive and person-centred. Many of the assessment frameworks used in clinical practice are 
+linked to nursing theories such as the activities of living (Roper et al . 2000) or the self-care deficit theory 
+of nursing (Orem 2001), or to other theory including Maslow’s (1999) hierarchy of needs.
+Nursing models and theories serve as a guide for clinical practice and provide for a structured 
+approach insofar as they map out what areas to include in a patient assessment. The number of new 
+or modified assessment frameworks for nursing practice is ever increasing, but a common feature 
+across different nursing assessments is the inclusion of the core aspects of physical, psychosocial and 
+spiritual assessment within the context of family, community and environment (Figure 1.2). The deci -
+sion of which assessment framework to use is made by healthcare organisations and nursing manage -
+ment, who then oversee its implementation in their admission procedures and nursing documentation. 
+This is important because it provides a way of assuring a standardised approach to nursing assessment 
+and quality patient care.Figure 1.1  Assessment – the first stage in the process of planning patient care.Care deliveryIdentify patient needs
+and problems
+Identify priorities of careAssessment
+Evaluation
+Individualised patient
+care plan 
+
+===== Page 4 =====
+
+Principles of nursing assessment  Chapter 1
+5
+In terms of how this translates into practice and what information is gathered during the nursing 
+assessment, the broad areas to consider include biographical and health data, a systematic review of 
+patient systems and functions, and a social assessment:
+• Biographical and health data. Obtaining information about the patient’s health history is vital for 
+putting the current problem or illness into context (Kaufman 2008).
+Assessment of . . . . . . in relation to the following aspects
+The patient’s understanding of the reason 
+for admission
+Biographical and contact details
+Religion
+Past medical and surgical history
+Previous history of healthcare-
+associated infections, e.g. MRSA, VRE and 
+Clostridium difficile
+Allergies
+Drugs and medications
+The patient’s knowledge of hospital policy, 
+such as visiting, patients’ property and 
+valuablesIdentifying significant information that 
+affects current health status and 
+care-planning
+• Patient assessment. This involves a ‘head-to-toe’ systematic review of the patient. A review of 
+systems and functions enables the nurse to elicit information about problems and provide vital 
+clues to support a clinical diagnosis or uncover a problem of which the patient is unaware. The 
+depth of the patient assessment will depend on the patient’s condition and the urgency of the 
+clinical situation (Tagney 2008).
+Assessment of . . . . . . in relation to the following aspects
+Breathing; smoking history
+Cardiovascular system
+Communication
+Diet, nutrition and hydration
+Elimination
+Mobility
+Personal hygiene
+Skin condition
+Sleep patterns
+Sexual health
+Concerns, anxieties, fears and moodThe key problem as identified by the patient
+Changes in function
+Coping strategies in dealing with changes
+Level of dependence/independence
+The patient’s normal activity, function and 
+behaviour
+Health beliefs and lifestyle behaviour
+Preventive health measures including 
+screening and immunisationFigure 1.2  Key aspects to include in a patient assessment.Psychosocial 
+Spiritual Physical 
+Community EnvironmentFamily
+
+===== Page 5 =====
+
+Part 1  Common Principles Underlying Medical and Surgical Nursing Practice
+6• Social assessment. Taking a social history enables an early identification of patients’ needs and 
+problems that might delay discharge from hospital. Social history-taking is not always considered 
+a priority in acute healthcare services, but it helps nurses to identify the patient’s needs so that 
+appropriate referrals can be made to the health and social services and service delivery is coordi -
+nated (Atwal 2002).
+Assessment of . . . . . . in relation to the following aspects
+Marital status
+Occupation
+Whether the patient is living alone or with 
+others, has a carer or is providing care for 
+another person
+Social networks and supports
+Housing or accommodation situation
+Informal support from family, neighbours 
+or voluntary community groups
+Current community or home services 
+– does the patient have a home help or 
+meals-on-wheels, go to a day centre or 
+receive support from a public health (or 
+community) nurse or other personnel?
+Access to shops for food, chemist, doctor, 
+dentist, health clinic, bank/post office
+Access to exercise or sports facilitiesImpact of the health problem on work, 
+day-to-day living, lifestyle and family
+Coping strategies – how the patient 
+currently manages to deal with problem
+Current supports used by the patient
+Identification of unmet support service 
+needs
+Methods of assessment
+The methods of assessment that are used to gather the information for clinical decision-making include 
+interviewing the patient and obtaining a health history, carrying out a physical examination, making 
+clinical observations and using risk assessment tools.
+Interviewing and obtaining a health history
+Taking a patient history is an essential part of assessment as an accurate history can provide over 80% 
+of the information required for diagnosis (Epstein et al . 2008). Obtaining an accurate history is not just 
+about asking a list of questions, but also requires establishing an effective patient–nurse relationship 
+in which the patient feels that the nurse is interested in understanding their healthcare problems (Elliott  
+2010). This involves putting patients at their ease, providing as much privacy as possible, ensuring the 
+nurse is familiar with any information already gathered, being sensitive to cultural differences and 
+inviting patients to tell their story (Tagney 2008).
+Once the introductions have been completed, obtaining a health history begins with inviting the 
+patient to tell their story and using an open question such as, ‘ Can you tell me what has brought you 
+here today? ’ After an explanation has been given, the nurse moves to asking key and targetted ques -
+tions to build up a comprehensive picture of the patient’s problem: ‘ How  has it affected you? Have 
+you noticed what makes it worse or what helps? Have you noticed any changes in . . . ? How does this 
+compare with previous times you have had this problem?’  More targetted questions are used to focus 
+on eliciting whether there are any associated symptoms so the nurse needs to be familiar with the 
+patterns associated with specific health problems.
+Investing in the end of the interview and considering the closing questions is vital to ensuring ongoing 
+continuity in the patient–nurse relationship in future consultations. Ending the interview involves Visit www.wileyfundamentalseries.com/medicalnursing  and read Reflective Question 1.1  to think 
+more about this topic.
+
+===== Page 6 =====
+
+Principles of nursing assessment  Chapter 1
+7summarising, framing information using the patient’s perspective and providing opportunity for the 
+patient to add further information. A closing question such as ‘ Is there anything else we haven’t covered 
+that you would like to discuss? ’ enables patients to provide additional information. During the first 
+nurse–patient encounter, some patients may find it difficult to disclose problems and may be unwilling 
+to do so until they know and have established a trusting relationship with the nurse. One helpful way in 
+which the nurse can let the patient know there will be further opportunities to discuss issues is by saying, 
+for example, ‘ If you think of anything else later on, let me know and we can have a chat then .’
+Physical examination
+Physical examination provides objective data and is used to corroborate evidence gathered from the 
+patient interview and clinical observation. Examination involves measurement of the ‘ vital signs ’, includ -
+ing temperature, heart rate, respiratory rate and blood pressure. The patient’s weight  is recorded and, 
+if indicated, the patient’s body mass index may also be calculated to determine whether the patient has 
+a normal weight or is under- or overweight. Urinalysis  using a dipstick reagent strip and a clean sample 
+of fresh urine from the patient is used to screen for abnormal substances such as glucose or protein. Any 
+abnormalities detected in the urinalysis should be followed up by more specific laboratory tests to 
+investigate the cause and perhaps detect a previously undiagnosed condition such as diabetes mellitus. 
+The patient’s skin condition is examined; in addition to carrying out a pressure ulcer risk assessment, 
+any abnormalities such as the presence of bruises, rashes and peripheral oedema are noted.
+Clinical observation
+Observation is an integral part of patient assessment as it provides an additional layer of information 
+gathered during the patient–nurse interaction, physical examination and routine ward-based tests. 
+Observation provides a means of gathering vital indicators about the patient’s condition and well-being, 
+and this information contributes to the overall evidence supporting clinical decision-making.
+During the interaction with the patient, the nurse takes note of non-verbal cues. Indicators of patient 
+anxiety or distress can prompt the nurse to investigate further using gentle questioning or to return 
+for a follow-up visit if the patient is unwilling or not ready to discuss their problems at that time. 
+Observing patients as they walk around the ward, move from chair to bed, get dressed and close 
+buttons or zips can provide important information about their mobility, balance and dexterity. Observ -
+ing the patient’s general appearance includes noting the colour of the face and body and any abnormal 
+signs such as nasal flaring, which can indicate respiratory distress. Abnormal smells or odours such as 
+the odour of ketones on the patient’s breath may indicate fasting or diabetic ketoacidosis. Observing 
+the patient’s behaviour noting inappropriate responses and actions can indicate neurological, meta -
+bolic, endocrine or mental health problems.
+Information gathered from observing the patient is used along with that assimilated from the patient 
+interview and physical examination to make sense of the patient’s health problem and to support clini -
+cal decision-making.
+Assessment tools
+Nurses can make use of a range of assessment tools and rating scales as part of their assessment of 
+the patient. These provide a standardised approach to assessing specific aspects of the patient’s condi -
+tion that can otherwise be difficult to measure (Table 1.1).
+The Glasgow Coma Scale (Teasdale & Jennett 1974), for example, provides a means of assessing a 
+patient who is becoming increasingly drowsy and unresponsive and, importantly, enables nurses to com -
+municate the findings in a way that other healthcare professionals will understand. Using the Glasgow 
+Coma Scale, the patient is assessed on three specific items of (1) best eye-opening, (2) best verbal 
+response, and (3) best motor response. The patient’s response on each of these items is converted into a 
+numerical score, with the total score used to determine the level of consciousness.
+The Early Warning Score (EWS; McGaughey et al . 2007) is an example of another type of tool that 
+not only measures the patient’s status, but also identifies an action plan for the healthcare professional 
+
+===== Page 7 =====
+
+Part 1  Common Principles Underlying Medical and Surgical Nursing Practice
+8
+to follow. In the EWS, the physiological parameters are set and used to initiate further interventions. 
+For example, if a patient’s temperature exceeds a predetermined level, blood cultures will be taken.
+Other assessment tools are used to identify patients at risk, for example, of developing pressure 
+ulcers. These predictive tools help nurses to identify at-risk patients so that interventions can be put 
+in place to prevent pressure ulcers occurring. Pressure ulcer risk assessment tools are, however, only 
+one component of risk assessment. Gould et al . (2002) found that tools such as the Braden, Waterlow 
+and Norton scales are not always accurate as they can either over- or underpredict risk. Therefore, 
+pressure ulcer risk assessment tools serve as guides, and the nurse’s own clinical judgement should 
+also be taken into consideration.
+Patient self-assessment tools are also available whereby patients use a visual analogue scale or brief 
+questionnaire to assess themselves. The pain thermometer is one example – on this, the patient scores 
+how severe the pain is by using a rating scale of 1–10 where 1 is no pain and 10 is the worst pain 
+imaginable. Another example of such a tool is the patient distress self-assessment tool developed by 
+the National Comprehensive Cancer Network (2011) in America. This uses a distress ‘thermometer’ 
+along with a tick box checklist of practical, family, emotional and physical problems and spiritual or 
+religious concerns encountered with cancer patients.
+Rapid assessment of the acutely ill patient
+A full patient assessment that includes a detailed review of physical, psychosocial and preventive health 
+needs, a physical examination and routine tests can take several hours to complete. An in-depth assess -
+ment requires time and is appropriate for elective, non-emergency cases and for patients on their first 
+visit or admission to the hospital or clinic. Given that nurses also work in acute care situations, however, Table 1.1  Examples of assessment tools and rating scales
+Assessment aspect Assessment tools and rating scales
+Level of 
+consciousnessGlasgow Coma Scale (Teasdale & Jennett 1974)
+AVPU (Alert, Voice, Pain, Unresponsive; McNarry & Goldhill 2004)
+Acutely ill or patient 
+deterioratingAlert® (Smith 2003)
+Manchester Triage Scale (Manchester Triage Group 2006)
+Early Warning Score (McGaughey et al . 2007)
+Pressure ulcer risk Braden scale (Bergstrom et al . 1987)
+Waterlow score (Waterlow 2005)
+Norton score (Norton et al . 1975)
+Moving and handling Manual Handling Assessments in Hospitals and the Community: An RCN Guide  
+(Royal College of Nursing 2003)
+Falls Falls – the Assessment and Prevention of Falls in Older People  (NICE 2004)
+Pain Pain thermometer – numeric rating scale
+Abbey Pain Scale for patients who are unable to verbalise or articulate their 
+needs (Abbey et al . 2004)
+Patient distress National Comprehensive Cancer Network Guidelines
+Distress Management , Version 1.2011 (National Comprehensive Cancer 
+Network 2011)
+Bowel elimination Bristol Stool Form Chart (Lewis & Heaton 1997, © 2000 Norgine Ltd.)
+Rome III criteria (Longstreth et al . 2006)
+Eton scale for constipation (Kyle et al . 2005)
+
+===== Page 8 =====
+
+Principles of nursing assessment  Chapter 1
+9rapid assessment skills are also important, especially as the early recognition of a deterioration in the 
+critically ill or unstable patient is vital to managing the care of such acutely ill individuals. Depending 
+on how acute or unstable the patient’s condition is, some examples of rapid assessment systems are 
+outlined here.
+‘Track and Trigger’
+Delays in recognising patients who are acutely ill on admission to hospital or in detecting clinical dete -
+rioration during their hospital stay can result in serious consequences. An analysis of 425 patient deaths 
+that occurred in UK acute hospitals in 2005 showed that 64 deaths were related to a failure to detect 
+and recognise changes in patients’ vital signs, a failure to act upon the worsening vital signs or delays 
+in the patient receiving medical attention (National Patient Safety Agency 2007).
+To avoid delays in the detection and recognition of acute illness and in starting appropriate inter -
+ventions, NICE (2007) recommends that a physiological Track and Trigger system is used to monitor 
+all adult patients in acute hospital care settings. NICE recommends that the patient’s heart rate, 
+respiratory rate, systolic blood pressure, level of consciousness, oxygen saturation and temperature 
+are monitored and that key changes in these physiological observations are used to trigger a response. 
+The response to a low score involves increasing the frequency of observations and alerting the nurse 
+in charge to changes in the patient’s condition. The response to a medium score involves making an 
+urgent call to the patient’s primary medical team, and the response to a high score involves making 
+an emergency call to the medical team, which includes a doctor skilled in assessing critically ill 
+patients and in advanced airway management and resuscitation skills. In addition to initiating appro -
+priate interventions, the Track and Trigger system includes information about when to transfer the 
+patient to the critical care area for ongoing care.
+Alert®
+For use in situations in which a patient is deteriorating, some hospitals have introduced the Alert® 
+system for rapid assessment of the critically ill patient. This acts as a decision-making tool to alert 
+healthcare professionals to patients who are acutely ill, to determine the level of urgency and to know 
+when to call the emergency medical team. The Alert® framework (Smith 2003) is just one example of 
+a rapid and systematic approach to assessment that trains healthcare professionals to rapidly assess a 
+patient whose condition is deteriorating. It follows an ABCDE sequence in which A is airway, B is breath -
+ing, C is circulation, D is disability (neurological assessment including assessment of the level of con -
+sciousness and/or use of the Glasgow Coma Scale) and E is exposure  (anything that may contribute to 
+the patient’s deterioration).
+Cardiopulmonary resuscitation
+In emergency, cardiac arrest and life-threatening situations in which the patient is unresponsive, the 
+immediate priorities are to assess the patient for signs of life (Resuscitation Council UK 2010). If the 
+patient shows no signs of life, the nurse calls the resuscitation team and if no carotid pulse is present, 
+starts cardiopulmonary resuscitation. Once these priorities have been addressed, other important 
+assessments can then be made.
+Documenting patient assessment  
+and record-keeping
+After assessing the patient, it is important that nurses record their findings and so provide documentary 
+evidence about the patient’s condition. This written information is vital for providing baseline data and 
+ensuring continuity of patient care. It provides information that other nurses and healthcare profes -
+sionals can refer to when planning and coordinating patient care. Although patient assessment forms 
+and nursing documentation are set by local hospital policy and procedures, the national professional 
+guidelines for recording nursing practice and patient assessment advise the following:
+
+===== Page 9 =====
+
+Part 1  Common Principles Underlying Medical and Surgical Nursing Practice
+10• An accurate assessment of the person’s physical, psychological and social well-being, and, when -
+ever necessary, the views and observations of family members in relation to that assessment’ 
+should be included in a patient record. ( An Bord Altranais  2002, p. 2)
+• Evidence in relation to the planning and provision of nursing care should be included as part of a 
+patient record. ( An Bord Altranais  2002, p. 2)
+• Record details of any assessment and reviews undertaken, and provide clear evidence of the 
+arrangements made for future and ongoing care. This should also include details of information 
+given about care and treatment. (NMC 2009, p. 4)
+The information gathered from an assessment when the patient is first admitted to hospital or first 
+visits an outpatient clinic needs to be recorded. It provides the evidence to support clinical decisions 
+and a rationale for the individualised patient care plan. Ongoing or continuous patient assessment 
+when monitoring to evaluate changes in a patient’s condition in changing circumstances also needs to 
+be recorded, and nursing actions documented. Nursing assessment may also identify patient problems 
+that need to be referred for further assessment by an appropriate healthcare professional such as a 
+physiotherapist, dietitian, social worker, speech therapist or occupational therapist.
+The importance of nursing documentation is emphasised by policy-makers and professionals  
+in Ireland ( An Bord Altranais , 2002), the UK (NMC, 2009) and internationally (Wang et al . 2011). 
+However, evidence from a review of quality audits of nursing documentation in actual clinical practice 
+has revealed some deficiencies (Wang et al . 2011). Although documentation does not always capture 
+the full extent of what happens in actual nursing practice, Wang et al . found several studies that 
+revealed insufficient recording of psychological, social, cultural and spiritual aspects of care. Other 
+deficiencies highlighted by these authors included a lack of documentation of the patient’s vital signs, 
+diagnosis leading to hospitalisation, assessment of pressure ulcers and assessment for specific care 
+issues, including older patients with chronic heart failure, the physical characteristics of wounds or 
+patients with pain and cognitive impairment. The implications for practice, therefore, are that if docu -
+mentation is to serve as a vital communication tool between nurses and other caregivers for the 
+exchange of information gathered at assessment, attention needs to be paid to ensuring there are no 
+gaps in documenting patient assessment.
+Conclusion
+The nursing assessment of the patient is complex as it involves using different methods to gather 
+information on diverse aspects of patient care across a range of acute and chronic healthcare  
+situations. Nursing assessment generates information that is used to inform nursing actions and inter -
+ventions. From this information, the patient’s problems are identified, further investigations to deter -
+mine the cause of the problem are selected, and decisions are made about what observations need 
+to be tracked and which referrals to other healthcare professionals are needed.
+The pace at which nursing assessment is carried out is determined by the patient’s condition and 
+whether it is an emergency, the level of patient distress, how quickly the patient’s condition is deterio -
+rating, whether the patient’s condition is stable or unstable, and whether the patient is presenting with 
+an acute or chronic illness. The principles of nursing assessment in this chapter are intended to serve 
+as a framework to guide nurses in organising their patient assessment. The key to nursing assessment, 
+however, is to listen to the patient and work towards an understanding the nature of the healthcare 
+problem from the patient’s perspective.
+Now visit the companion website and test yourself on this chapter:
+www.wileyfundamentalseries.com/medicalnursing
+References
+Abbey, J., Piller, N., DeBellis, A. et al . (2004) The Abbey pain scale: a 1-minute numerical indicator for people with 
+end-stage dementia. International Journal of Palliative Nursing , 10(1):6–13.
+An Bord Altranais  (2002) Recording Clinical Practice: Guidance to Nurses and Midwives . Dublin: An Bord Altranais.
+
+===== Page 10 =====
+
+Principles of nursing assessment  Chapter 1
+11Atwal, A. (2002) Nurses’ perceptions of discharge planning in acute health care: a case study in one British teaching 
+hospital. Journal of Advanced Nursing , 39(5):450–8.
+Bergstrom, N., Braden, B.J., Laguzza, A. & Holma, V. (1987). The Braden Scale for predicting pressure sore risk. Nursing 
+Research , 36(4):205–10.
+Capelastegui, A., España, P .P ., Quintana, J.M. et al . (2008) Declining length of hospital stay for pneumonia and post -
+discharge outcomes. American Journal of Medicine , 121(10):845–52.
+Elliott, N. (2010) ‘Mutual intacting’: a grounded theory study of clinical judgement practice issues. Journal of 
+Advanced Nursing , 66(12):2711–21.
+Epstein, O., Perkin, D., Cookson, J., et al . (2008). Clinical Examination , 4th ed. Edinburgh: Mosby.
+Gould, D., Goldstone, L., Gammon, J., Kelly, D. & Maldwell, A. (2002) Establishing the validity of pressure ulcer risk 
+assessment scales: a novel approach using illustrated patient scenarios. International Journal of Nursing Studies , 
+39(2):215–28.
+Kaufman, G. (2008) Patient assessment: effective consultation and history taking. Nursing Standard , 23(4):
+50–6.
+Kyle, G., Prynn, P ., Oliver, H. & Dunbar, T. (2005) The Eton Scale: a tool for risk assessment for constipation. Nursing 
+Times , 101(18):50–1.
+Lewis, S.J., & Heaton, K.W. (1997) Stool form scale as a useful guide to intestinal transit time. Scandinavian Journal 
+of Gastroenterology , 32:920–4.
+Longstreth, G., Thompson, W.G., Chey, W., Houghton, L., Mearin, F. & Spiller, R. (2006) Functional bowel disorders. 
+Gastroenterology , 130:1480–91.
+McGaughey, J., Alderdice, F., Fowler, R., Kapila, A., Mayhew, A. & Moutray, M. (2007) Outreach and Early Warning 
+Systems (EWS) for the prevention of intensive care admission and death of critically ill patients on general 
+hospital wards. Cochrane Database of Systematic Reviews , (3):CD005529.
+McNarry, A.F., & Goldhill, D.R. (2004). Simple bedside assessment of level of consciousness: comparison of two 
+simple assessment scales with the Glasgow Coma Scale. Anaesthesia , 59:34–7.
+Manchester Triage Group (2006) Emergency Triage/Manchester Triage Group , 2nd ed. London: BMJ.
+Maslow, A.H. (1999) Toward a Psychology of Being . New York: Wiley.
+National Comprehensive Cancer Network (2011) NCCN Clinical Practice Guidelines in Oncology, Distress Manage -
+ment.  Version 1.2011. Retrieved 7th March 2011 from http://www.nccn.org/professionals/physician_gls/pdf/
+distress.pdf.
+National Institute for Clinical Excellence (2004) Falls: The Assessment and Prevention of Falls in Older People . Clinical 
+Guideline No. 21. London: NICE.
+National Institute for Health and Clinical Excellence (2007) Acutely Ill Patients in Hospital: Recognition of and 
+Response to Acute Illness in Adults in Hospital . Clinical Guideline No. 50. London: NICE.
+National Patient Safety Agency (2007) Safer Care for the Acutely Ill Patient: Learning from Serious Incidents . PSO/5. 
+London: National Patient Safety Agency.
+Norton, D., McClaren, R. & Exton-Smith, A. (1975) An Investigation of Geriatric Nursing Problems in Hospital . Edin -
+burgh: Churchill Livingstone.
+Nursing and Midwifery Council (2009) Record Keeping: Guidance for Nurses and Midwives . London: NMC.
+Orem, D. (2001) Nursing: Concepts of Practice , 6th ed. St Louis: Mosby.
+Resuscitation Council (UK) (2010). Resuscitation Guidelines 2010 . London: Resuscitation Council UK.
+Roper, N., Logan, W. & Tiereny, A. (2000) The Roper-Logan-Tierney Model of Nursing: Based on Activities of Living . 
+Edinburgh: Churchill Livingstone.
+Royal College of Nursing (2003) Manual Handling Assessments in Hospitals and the Community: An RCN Guide . 
+London: RCN.
+Saczynski, J.S., Lessard, D., Spencer, F.A. et al . (2010) Declining length of stay for patients hospitalized with AMI: 
+impact on mortality and readmissions. American Journal of Medicine , 123(11):1007–15.
+Shepperd, S., McClaran, J., Phillips, C.O., et al . (2010) Discharge planning from hospital to home. Cochrane Database 
+of Systematic Reviews , (1):CD000313.
+Smith, G. (2003) ALERT: Acute Life Threatening Events, Treatment and Recognition . Portsmouth: University of 
+Portsmouth.
+Tagney, J. (2008) Skills in taking an accurate cardiac patient history. British Journal of Cardiac Nursing , 3(1):8–13.
+Teasdale, G., & Jennett, B. (1974) Assessment of coma and impaired consciousness. A practical scale. Lancet , 13(2), 
+81–4.
+Wang, N., Hailey, D. & Yu, P . (2011) Quality of nursing documentation and approaches to its evaluation: a mixed-method 
+systematic review. Online Journal of Advanced Nursing  67:doi 10.1111/j.1365-2648.2011.05634.
+Waterlow, J. (2005). Pressure Ulcer Prevention Manual . London: Wound Care Society.

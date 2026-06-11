@@ -3,6 +3,18 @@ import json
 from datetime import datetime
 import sqlite3
 import os
+import re
+def extract_exam_number(exam_title):
+    """Extract exam number from title for natural sorting"""
+    # Match patterns like "Gp Exam 1", "GP Exam 15", "Exam 1", etc.
+    match = re.search(r'(?:Exam|Exam)\s+(\d+)', exam_title, re.IGNORECASE)
+    if match:
+        return int(match.group(1))
+    return 999
+
+def sort_exams_by_number(exams):
+    """Sort exams by their number naturally"""
+    return sorted(exams, key=lambda e: extract_exam_number(e.get('title', '')))
 
 API_URL = 'https://thecla-backend.onrender.com'
 
@@ -23,15 +35,16 @@ def list_exams_menu():
         print("7. 🏥  List ICU Nurse Exams")
         print("8. 🚑  List Emergency Nurse Exams")
         print("9. 👶  List Neonatal Nurse Exams")
+        print("10. 💊  List Pharmacist Exams")  # ← ADD THIS LINE
         print("0. ↩️  Back to Main Menu")
         print("=" * 50)
         
-        choice = input("\nEnter your choice (0-9): ").strip()
+        choice = input("\nEnter your choice (0-10): ").strip()  # ← CHANGE 9 to 10
         
         if choice == '0':
             break
         elif choice == '1':
-            list_all_exams()  # ← TO THIS
+            list_all_exams()
         elif choice == '2':
             list_exams_by_discipline('nurse')
         elif choice == '3':
@@ -48,10 +61,18 @@ def list_exams_menu():
             list_exams_by_discipline('emergency_nurse')
         elif choice == '9':
             list_exams_by_discipline('neonatal_nurse')
+        elif choice == '10':  # ← ADD THIS BLOCK
+            list_exams_by_discipline('pharmacist')
         else:
-            print("❌ Invalid choice. Please enter 0-9")
+            print("❌ Invalid choice. Please enter 0-10")  # ← CHANGE 9 to 10
         
         input("\nPress Enter to continue...")
+
+
+
+
+
+
 
 
 
@@ -459,10 +480,11 @@ def list_notes_menu():
         print("7. 🏥  List ICU Nurse Notes")
         print("8. 🚑  List Emergency Nurse Notes")
         print("9. 👶  List Neonatal Nurse Notes")
+        print("10. 💊  List Pharmacist Notes")  # ← ADD THIS LINE
         print("0. ↩️  Back to Main Menu")
         print("=" * 50)
         
-        choice = input("\nEnter your choice (0-9): ").strip()
+        choice = input("\nEnter your choice (0-10): ").strip()  # ← CHANGE 9 to 10
         
         if choice == '0':
             break
@@ -484,10 +506,20 @@ def list_notes_menu():
             list_notes_by_discipline('emergency_nurse')
         elif choice == '9':
             list_notes_by_discipline('neonatal_nurse')
+        elif choice == '10':  # ← ADD THIS BLOCK
+            list_notes_by_discipline('pharmacist')
         else:
-            print("❌ Invalid choice. Please enter 0-9")
+            print("❌ Invalid choice. Please enter 0-10")  # ← CHANGE 9 to 10
         
         input("\nPress Enter to continue...")
+
+
+
+
+
+
+
+
 
 
 def list_all_notes():
@@ -562,11 +594,12 @@ def release_exam_menu():
         print("6. 🏥  Release ICU Nurse Exam")
         print("7. 🚑  Release Emergency Nurse Exam")
         print("8. 👶  Release Neonatal Nurse Exam")
-        print("9. 📋  List all exams with IDs")
+        print("9. 💊  Release Pharmacist Exam")  # ← ADD THIS LINE
+        print("10. 📋  List all exams with IDs")  # ← CHANGE 9 to 10
         print("0. ↩️  Back to Main Menu")
         print("=" * 50)
         
-        choice = input("\nEnter your choice (0-9): ").strip()
+        choice = input("\nEnter your choice (0-10): ").strip()  # ← CHANGE 9 to 10
         
         if choice == '0':
             break
@@ -586,12 +619,20 @@ def release_exam_menu():
             list_and_release_exam('emergency_nurse')
         elif choice == '8':
             list_and_release_exam('neonatal_nurse')
-        elif choice == '9':
+        elif choice == '9':  # ← ADD THIS BLOCK
+            list_and_release_exam('pharmacist')
+        elif choice == '10':  # ← CHANGE THIS FROM 9 TO 10
             list_all_exams_for_release()
         else:
-            print("❌ Invalid choice. Please enter 0-9")
+            print("❌ Invalid choice. Please enter 0-10")  # ← CHANGE 9 to 10
         
         input("\n Press Enter to continue...")
+
+
+
+
+
+
 
 def unrelease_exam_menu():
     """Sub-menu for unreleasing exams by profession"""
@@ -803,14 +844,15 @@ def bulk_release_by_discipline():
         '5': 'physiotherapist',
         '6': 'icu_nurse',
         '7': 'emergency_nurse',
-        '8': 'neonatal_nurse'
+        '8': 'neonatal_nurse',
+        '9': 'pharmacist'
     }
     
     print("Select discipline:")
     for key, disc in disciplines.items():
         print(f"  {key}. {disc.upper()}")
     
-    choice = input("\nEnter discipline number (1-8): ").strip()
+    choice = input("\nEnter discipline number (1-9): ").strip()
     
     if choice not in disciplines:
         print("❌ Invalid choice")
@@ -836,6 +878,9 @@ def bulk_release_by_discipline():
                 print(f"✅ All {discipline} exams are already released!")
                 return
             
+            # SORT BY EXAM NUMBER NATURALLY
+            unreleased_exams = sort_exams_by_number(unreleased_exams)
+            
             print(f"\n📦 Found {len(unreleased_exams)} unreleased exams for {discipline.upper()}:\n")
             for exam in unreleased_exams:
                 print(f"  - {exam['title']} (ID: {exam['id']})")
@@ -848,13 +893,14 @@ def bulk_release_by_discipline():
             success_count = 0
             for exam in unreleased_exams:
                 print(f"\n🚀 Releasing: {exam['title']}")
-                if release_exam(exam['id']):  # Using your existing release_exam function
+                if release_exam(exam['id']):
                     success_count += 1
             
             print(f"\n✅ Successfully released {success_count}/{len(unreleased_exams)} exams for {discipline.upper()}")
             
     except Exception as e:
         print(f"💥 Error: {e}")
+
 
 def list_all_exams_for_release():
     """List all exams with IDs for release selection"""
@@ -1213,6 +1259,86 @@ def delete_all_exams_in_discipline():
 
 
 
+def delete_all_notes_in_discipline_v2():
+    """Delete ALL study notes (singular exams) in a specific discipline"""
+    print("\n🗑️ DELETE ALL STUDY NOTES IN DISCIPLINE")
+    print("=" * 50)
+    
+    discipline = input("Enter discipline to delete ALL study notes (gp, nurse, pharmacist, etc): ").strip().lower()
+     
+    
+    valid_disciplines = ['gp', 'nurse', 'midwife', 'lab_tech', 'physiotherapist', 
+                        'icu_nurse', 'emergency_nurse', 'neonatal_nurse', 'pharmacist']
+    
+    if discipline not in valid_disciplines:
+        print(f"❌ Invalid discipline. Choose from: {', '.join(valid_disciplines)}")
+        return False
+    
+    try:
+        # Get ALL exams from the server
+        response = requests.get(f"{API_URL}/admin/exams")
+        if response.status_code != 200:
+            print(f"❌ Could not fetch exams: {response.status_code}")
+            return False
+        
+        all_exams = response.json()
+        
+        # Find ONLY study notes (source='singular') for this discipline
+        notes_to_delete = [
+            exam for exam in all_exams 
+            if exam.get('source') == 'singular' 
+            and exam.get('discipline_id') == discipline
+        ]
+        
+        if not notes_to_delete:
+            print(f"✅ No study notes found for discipline: {discipline}")
+            return False
+        
+        # Show what will be deleted
+        print(f"\n📚 Found {len(notes_to_delete)} study notes to delete:")
+        for note in notes_to_delete:
+            print(f"   - {note['title']} (ID: {note['id']})")
+        
+        # Double confirmation with count
+        confirm = input(f"\n⚠️ TYPE 'DELETE {len(notes_to_delete)} NOTES' to confirm: ").strip()
+        if confirm != f'DELETE {len(notes_to_delete)} NOTES':
+            print("❌ Deletion cancelled")
+            return False
+        
+        # Delete each note individually using the WORKING singular endpoint
+        print(f"\n🗑️ Deleting {len(notes_to_delete)} study notes...")
+        success_count = 0
+        failed_notes = []
+        
+        for note in notes_to_delete:
+            # Use the singular endpoint that works (from your logs)
+            delete_response = requests.delete(f"{API_URL}/admin/exam/{note['id']}")
+            
+            if delete_response.status_code == 200:
+                success_count += 1
+                print(f"   ✅ Deleted: {note['title']}")
+            else:
+                failed_notes.append(note['title'])
+                print(f"   ❌ Failed: {note['title']} - {delete_response.status_code}")
+        
+        # Summary
+        print(f"\n" + "=" * 50)
+        print(f"📊 DELETION SUMMARY")
+        print(f"✅ Successfully deleted: {success_count}/{len(notes_to_delete)}")
+        
+        if failed_notes:
+            print(f"❌ Failed to delete: {len(failed_notes)} notes")
+            for note in failed_notes:
+                print(f"   - {note}")
+        
+        return success_count == len(notes_to_delete)
+            
+    except Exception as e:
+        print(f"💥 Error: {e}")
+        return False
+
+
+
 
 def manage_study_notes():
     """Manage study notes (singular exams)"""
@@ -1234,16 +1360,14 @@ def manage_study_notes():
         choice = input("Enter choice (1-6): ").strip()
         
         if choice == '1':
-            # Use the working admin endpoint
+            # List all study notes
             try:
                 response = requests.get(f"{API_URL}/admin/exams")
                 if response.status_code == 200:
                     all_exams = response.json()
-                    # Filter for study notes (singular exams)
                     notes = [exam for exam in all_exams if exam.get('source') == 'singular']
                     print(f"\n📚 Found {len(notes)} study notes:")
                     
-                    # Group by discipline
                     by_discipline = {}
                     for note in notes:
                         discipline = note.get('discipline_id', 'unknown')
@@ -1251,13 +1375,11 @@ def manage_study_notes():
                             by_discipline[discipline] = []
                         by_discipline[discipline].append(note)
                     
-                    # Display by discipline
                     for discipline, discipline_notes in by_discipline.items():
                         print(f"\n🏥 {discipline.upper()} ({len(discipline_notes)} notes):")
                         for note in discipline_notes:
                             status = "🟢 RELEASED" if note['is_released'] else "🔴 UNRELEASED"
                             print(f"   - {note['title']} (ID: {note['id']}) - {status}")
-                            
                 else:
                     print(f"❌ Failed to fetch: {response.status_code}")
             except Exception as e:
@@ -1276,11 +1398,10 @@ def manage_study_notes():
         elif choice == '4':
             note_id = input("Enter note ID to delete: ").strip()
             if note_id:
-                           
-                delete_specific_note(note_id)  # ← CORRECT - pass the note_id
+                delete_specific_note(note_id)
         
         elif choice == '5':
-            delete_all_exams_in_discipline()
+            delete_all_notes_in_discipline_v2()
         
         elif choice == '6':
             break
@@ -1289,8 +1410,6 @@ def manage_study_notes():
             print("❌ Invalid choice")
         
         input("\nPress Enter to continue...")
-
-
 
 
 
@@ -1450,4 +1569,3 @@ if __name__ == "__main__":
         traceback.print_exc()
         input("Press Enter to exit...")
 
-        

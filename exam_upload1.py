@@ -3,25 +3,6 @@ import re
 import uuid
 from docx import Document
 import requests
-import re  # Make sure re is imported (you already have it)
-
-def extract_chapter_number(filename):
-    """Extract chapter number from filename for natural sorting"""
-    # Match patterns like "Chapter 1", "Chapter 10", "Chapter 2", or just numbers
-    match = re.search(r'Chapter\s+(\d+)', filename, re.IGNORECASE)
-    if match:
-        return int(match.group(1))
-    
-    # Also match patterns like "1. ", "01. ", etc.
-    match = re.search(r'^(\d+)[\.\s-]', filename)
-    if match:
-        return int(match.group(1))
-    
-    return 999  # Put files without chapter number at the end
-
-def sort_files_by_chapter(files):
-    """Sort files by chapter number naturally"""
-    return sorted(files, key=extract_chapter_number)
 
 
 def extract_questions_from_text(text, exam_uuid):
@@ -35,6 +16,8 @@ def extract_questions_from_text(text, exam_uuid):
             self.current_q = None
             self.questions = []
             self.question_count = 0
+            self.skipped_questions = []  # Track skipped questions
+            self.missing_rationale_questions = []  # NEW: Track questions missing rationale
             self.all_lines = all_lines  # Store all lines for lookahead
             
             # Patterns (compiled once for efficiency)
@@ -195,21 +178,27 @@ def extract_questions_from_text(text, exam_uuid):
             # Validation checks
             is_valid = True
             issues = []
+            q_number = self.current_q['number']
             
             if not self.current_q['text'] or len(self.current_q['text'].strip()) < 5:
                 issues.append("Question text too short")
                 is_valid = False
                 
             if len(self.current_q['options']) < 2:
-                issues.append(f"Only {len(self.current_q['options'])} options")
+                issues.append(f"Only {len(self.current_q['options'])} options (need at least 2)")
                 is_valid = False
             elif len(self.current_q['options']) > 6:
-                issues.append(f"Too many options: {len(self.current_q['options'])}")
+                issues.append(f"Too many options: {len(self.current_q['options'])} (max 6)")
                 # Still accept, but note
                 print(f"⚠️  Q{self.current_q['number']}: Has {len(self.current_q['options'])} options")
                 
             if self.current_q['correct_idx'] == -1:
-                issues.append("No correct answer")
+                issues.append("No correct answer found")
+                is_valid = False
+                
+            # Check for duplicate option text
+            if is_valid and len(set(self.current_q['options'])) != len(self.current_q['options']):
+                issues.append("Duplicate options found")
                 is_valid = False
                 
             if is_valid:
@@ -228,9 +217,30 @@ def extract_questions_from_text(text, exam_uuid):
                 }
                 
                 self.questions.append(q_data)
-                print(f"✅ Q{self.current_q['number']}: Saved ({len(self.current_q['options'])} options)")
+                
+                # NEW: Track questions missing rationale
+                if not q_data['rationale']:
+                    missing_info = {
+                        'number': q_number,
+                        'text_preview': q_data['text'][:100] if q_data['text'] else '[No text]',
+                        'options_count': len(q_data['options'])
+                    }
+                    self.missing_rationale_questions.append(missing_info)
+                    print(f"✅ Q{self.current_q['number']}: Saved ({len(self.current_q['options'])} options) - ⚠️ NO RATIONALE")
+                else:
+                    print(f"✅ Q{self.current_q['number']}: Saved ({len(self.current_q['options'])} options) - ✅ WITH RATIONALE")
             else:
-                print(f"❌ Q{self.current_q['number']}: Skipped - {', '.join(issues)}")
+                # Track skipped questions with details
+                skip_info = {
+                    'number': q_number,
+                    'reasons': issues,
+                    'text_preview': self.current_q['text'][:100] if self.current_q['text'] else '[No text]',
+                    'options_count': len(self.current_q['options']),
+                    'has_answer': self.current_q['correct_idx'] != -1
+                }
+                self.skipped_questions.append(skip_info)
+                print(f"❌ Q{q_number}: SKIPPED - {', '.join(issues)}")
+                print(f"   📝 Preview: {skip_info['text_preview']}...")
                 
             # Reset current question
             self.current_q = None
@@ -240,6 +250,14 @@ def extract_questions_from_text(text, exam_uuid):
             if self.current_q:
                 self.save_question()
             return self.questions
+        
+        def get_skipped_questions(self):
+            """Return list of skipped questions with details"""
+            return self.skipped_questions
+        
+        def get_missing_rationale_questions(self):
+            """Return list of questions missing rationale"""
+            return self.missing_rationale_questions
     
     # --- Main processing ---
     print(f"\n{'='*60}")
@@ -258,6 +276,8 @@ def extract_questions_from_text(text, exam_uuid):
     
     # Get all parsed questions
     questions = parser.get_questions()
+    skipped_questions = parser.get_skipped_questions()
+    missing_rationale_questions = parser.get_missing_rationale_questions()
     
     # Summary statistics
     print(f"\n{'='*60}")
@@ -266,10 +286,42 @@ def extract_questions_from_text(text, exam_uuid):
     print(f"Total lines processed: {len(lines)}")
     print(f"Questions found: {parser.question_count}")
     print(f"Valid questions saved: {len(questions)}")
+    print(f"Skipped questions (invalid format): {len(skipped_questions)}")
+    print(f"Questions missing rationale: {len(missing_rationale_questions)}")
+    
+    # NEW: Detailed skipped questions report (invalid format)
+    if skipped_questions:
+        print(f"\n{'='*60}")
+        print("❌ SKIPPED QUESTIONS (INVALID FORMAT)")
+        print(f"{'='*60}")
+        for idx, skip in enumerate(skipped_questions, 1):
+            print(f"\n{idx}. Question #{skip['number']} - SKIPPED")
+            print(f"   Reasons:")
+            for reason in skip['reasons']:
+                print(f"      • {reason}")
+            print(f"   Text preview: {skip['text_preview']}")
+            print(f"   Options found: {skip['options_count']}")
+            print(f"   Has answer key: {'Yes' if skip['has_answer'] else 'No'}")
+    else:
+        print(f"\n✅ No questions were skipped due to invalid format!")
+    
+    # NEW: Detailed missing rationale report
+    if missing_rationale_questions:
+        print(f"\n{'='*60}")
+        print("⚠️  QUESTIONS MISSING RATIONALE")
+        print(f"{'='*60}")
+        print(f"Found {len(missing_rationale_questions)} question(s) without rationale text:")
+        for idx, missing in enumerate(missing_rationale_questions, 1):
+            print(f"\n{idx}. Question #{missing['number']}")
+            print(f"   Text preview: {missing['text_preview']}...")
+            print(f"   Options: {missing['options_count']}")
+            print(f"   💡 Suggestion: Add 'Rationale:' text after the correct answer")
+    else:
+        print(f"\n✅ All {len(questions)} questions have rationale text!")
     
     if questions:
         questions_with_rationale = sum(1 for q in questions if q.get('rationale'))
-        print(f"Questions with rationale: {questions_with_rationale}/{len(questions)}")
+        print(f"\n📚 Questions with rationale: {questions_with_rationale}/{len(questions)}")
         
         # Show sample of first question
         if len(questions) > 0:
@@ -283,6 +335,8 @@ def extract_questions_from_text(text, exam_uuid):
             print(f"Correct: {correct_letter.upper()}")
             if q.get('rationale'):
                 print(f"Rationale: {q['rationale'][:60]}...")
+            else:
+                print(f"Rationale: ❌ MISSING")
     
     print(f"{'='*60}")
     
@@ -327,7 +381,7 @@ def get_profession_from_user():
             print(f"✅ Selected: {discipline_name} (discipline_id: {discipline_id})")
             return discipline_id, discipline_name
         else:
-            print("❌ Invalid choice. Please enter a number between 1-8")
+            print("❌ Invalid choice. Please enter a number between 1-9")
 
 # NEW: DYNAMIC FOLDER PATHS FOR EACH PROFESSION
 def get_folder_path(discipline_id):
@@ -406,7 +460,6 @@ def confirm_overwrite(exam_title, existing_exam):
             print("❌ Please enter 'y' for yes or 'n' for no")
 
 # NEW: UPLOAD SINGLE EXAM FILE
-
 def upload_single_exam():
     """Upload or update a specific exam file"""
     print("\n🎯 SINGLE EXAM UPLOAD")
@@ -418,9 +471,6 @@ def upload_single_exam():
     
     # List available files
     docx_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.docx') and not f.startswith('~$')]
-    
-    # Sort by chapter number
-    docx_files = sort_files_by_chapter(docx_files)
     
     if not docx_files:
         print(f"❌ No .docx files found in: {folder_path}")
@@ -445,7 +495,6 @@ def upload_single_exam():
     
     # Process the selected file
     process_exam_file(filename, folder_path, discipline_id, discipline_name)
-
 
 # NEW: PROCESS SINGLE EXAM FILE
 def process_exam_file(filename, folder_path, discipline_id, discipline_name):
@@ -500,6 +549,10 @@ def process_exam_file(filename, folder_path, discipline_id, discipline_name):
         questions_with_rationale = [q for q in questions if q.get('rationale')]
         print(f"📚 Questions with rationale: {len(questions_with_rationale)}/{len(questions)}")
         
+        if len(questions_with_rationale) < len(questions):
+            missing_count = len(questions) - len(questions_with_rationale)
+            print(f"⚠️  WARNING: {missing_count} question(s) are missing rationale text!")
+        
         # Upload exam
         response = requests.post(API_URL, json=payload)
         if response.status_code == 200:
@@ -531,9 +584,6 @@ def upload_all_exams():
 
     # Get all .docx files in the folder
     docx_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.docx') and not f.startswith('~$')]
-    
-    # Sort by chapter number
-    docx_files = sort_files_by_chapter(docx_files)
 
     if not docx_files:
         print(f"❌ No .docx files found in: {folder_path}")
@@ -541,10 +591,6 @@ def upload_all_exams():
         return
 
     print(f"📄 Found {len(docx_files)} exam file(s) to process")
-    
-    # Optional: Display files in order
-    for i, filename in enumerate(docx_files, 1):
-        print(f"   {i}. {filename}")
 
     for filename in docx_files:
         process_exam_file(filename, folder_path, discipline_id, discipline_name)
@@ -552,7 +598,6 @@ def upload_all_exams():
     print(f"\n🎉 Upload session completed for {discipline_name}!")
     print(f"📁 Files were processed from: {folder_path}")
 
-    
 # MAIN UPLOAD SCRIPT
 API_URL = 'https://thecla-backend.onrender.com/exams/'
 #API_URL = 'https://76f3bda79ccd.ngrok-free.app/exams/'

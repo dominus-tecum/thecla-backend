@@ -3790,6 +3790,10 @@ async def block_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
+    # ✅ ADD THIS ADMIN CHECK
+    if not is_user_admin(current_user):
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -3801,12 +3805,16 @@ async def block_user(
 
 
 
-
 @app.post("/admin/users/{user_id}/unblock")
 async def unblock_user(
     user_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)  # ← Add this
 ):
+    # ✅ ADD THIS ADMIN CHECK
+    if not is_user_admin(current_user):
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
