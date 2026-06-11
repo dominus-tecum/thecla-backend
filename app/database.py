@@ -6,7 +6,10 @@ import sqlite3  # ADD THIS AT THE TOP OF THE FILE
 
 # Original database for other features
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./theclamed.db")
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in SQLALCHEMY_DATABASE_URL else {})
+if "postgresql" in SQLALCHEMY_DATABASE_URL:
+    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+else:
+    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # NEW: Keamed database for exams
