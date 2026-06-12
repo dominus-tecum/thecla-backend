@@ -2,18 +2,16 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.models import Base
-import sqlite3  # ADD THIS AT THE TOP OF THE FILE
-print("🔧 LOADING database.py - POSTGRESQL FIX VERSION 2")
+import sqlite3
 
-# Original database for other features
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./theclamed.db")
-if "postgresql" in SQLALCHEMY_DATABASE_URL:
-    engine = create_engine(SQLALCHEMY_DATABASE_URL)
-else:
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+# Use DATABASE_URL from environment (PostgreSQL on Render, SQLite locally)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./theclamed.db")
+
+# Create engine - NO conditions, NO check_same_thread
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# NEW: Keamed database for exams
+# Keamed database (stays SQLite)
 KEAMED_DATABASE_URL = "sqlite:///./keamed.db"
 keamed_engine = create_engine(KEAMED_DATABASE_URL, connect_args={"check_same_thread": False})
 KeamedSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=keamed_engine)
@@ -22,11 +20,8 @@ def init_db():
     Base.metadata.create_all(bind=engine)
 
 def init_keamed_db():
-    """Create the Keamed-specific tables"""
     conn = sqlite3.connect('keamed.db')
     cursor = conn.cursor()
-    
-    # Create keamed_exams table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS keamed_exams (
             id TEXT PRIMARY KEY,
@@ -38,9 +33,7 @@ def init_keamed_db():
             total_questions INTEGER DEFAULT 10
         )
     ''')
-    
-    # Create keamed_questions table  
-    cursor.execute('''
+    cursor.execute('''  
         CREATE TABLE IF NOT EXISTS keamed_questions (
             id TEXT PRIMARY KEY,
             exam_id TEXT,
@@ -50,8 +43,6 @@ def init_keamed_db():
             FOREIGN KEY (exam_id) REFERENCES keamed_exams(id)
         )
     ''')
-    
-    # Create keamed_results table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS keamed_results (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,8 +60,6 @@ def init_keamed_db():
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    
-    # Create keamed_config table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS keamed_config (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,12 +67,10 @@ def init_keamed_db():
             config_value TEXT
         )
     ''')
-    
     conn.commit()
     conn.close()
     print("✅ Keamed tables created successfully")
 
-# NEW: Keamed database dependency
 def get_keamed_db():
     db = KeamedSessionLocal()
     try:
