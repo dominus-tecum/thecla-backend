@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.models import Base
 import sqlite3  # ADD THIS AT THE TOP OF THE FILE
+print("🔧 LOADING database.py - POSTGRESQL FIX VERSION 2")
 
 # Original database for other features
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./theclamed.db")
