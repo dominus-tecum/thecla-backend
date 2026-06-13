@@ -2420,27 +2420,6 @@ validate_openai_key()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # =============================================================================
 # QUIZ ENDPOINTS - END
 # =============================================================================
@@ -3198,42 +3177,6 @@ def delete_all_exams_by_discipline_admin(
             status_code=500, 
             detail=f"Error deleting exams: {str(e)}"
         )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # =============================================================================
@@ -5428,56 +5371,57 @@ def assess_simulation_decision(
 async def generate_procedure(request: dict = Body(...)):
     specialty = request.get("specialty", "emergency")
     difficulty = request.get("difficulty", "advanced")
+    procedure_name = request.get("procedure_title") or request.get("procedure_name") or f"{specialty} procedure"
     
-    try:
-        # ✅ NEW OPENAI 1.0+ SYNTAX
-        from openai import OpenAI
-        
-        client = OpenAI(api_key=config.OPENAI_API_KEY)
-        
-        response = client.chat.completions.create(
-            model=config.OPENAI_MODEL or "gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a medical expert creating procedure guides. Return JSON."
-                },
-                {
-                    "role": "user", 
-                    "content": f"Create a {difficulty} level procedure for {specialty} with steps, equipment, complications. Return JSON."
-                }
-            ],
-            max_tokens=800,
-            temperature=0.7,
-            response_format={"type": "json_object"}
-        )
-        
-        # ✅ NEW WAY TO ACCESS RESPONSE
-        ai_content = response.choices[0].message.content
-        ai_data = json.loads(ai_content)
-        
-        return {
-            "guide": ai_data,
-            "attempt_id": f"ai_attempt_{uuid.uuid4().hex[:12]}"
-        }
-        
-    except Exception as e:
-        print(f"OpenAI error: {e}")
-        # Fallback to mock data
-        procedure_guide = {
-            "id": f"proc_{uuid.uuid4().hex[:8]}",
-            "title": f"{specialty.capitalize()} Procedure Guide",
-            "steps": [...],
-            "equipment": [...],
-            "complications": [...],
-            "prerequisites": [...],
-            "indications": [...],
-            "contraindications": [...]
-        }
-        return {
-            "guide": procedure_guide,
-            "attempt_id": f"fallback_{uuid.uuid4().hex[:12]}"
-        }
+    print(f"🎯 Generating procedure: {procedure_name}")
+    
+    from openai import OpenAI
+    
+    client = OpenAI(api_key=config.OPENAI_API_KEY)
+    
+    prompt = f"""Generate a procedure guide for: {procedure_name}
+
+Return EXACT JSON format:
+{{
+    "title": "{procedure_name}",
+    "learningObjectives": ["Objective 1", "Objective 2", "Objective 3"],
+    "steps": [
+        {{
+            "title": "Step 1: Action",
+            "description": "Description",
+            "options": ["Option 1", "Option 2", "Option 3"],
+            "correctOptionIndex": 0,
+            "timeEstimate": 120
+        }}
+    ],
+    "equipment": ["Equipment 1"],
+    "complications": ["Complication 1"],
+    "safetyNotes": ["Safety note 1"],
+    "indications": ["Indication 1"],
+    "contraindications": ["Contraindication 1"]
+}}
+
+Generate 4 steps."""
+    
+    # NO RETRIES - single attempt
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",  # TEXT MODEL - NOT REALTIME
+        messages=[
+            {"role": "system", "content": "Return valid JSON only."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=2000,
+        temperature=0.7,
+        response_format={"type": "json_object"}
+    )
+    
+    ai_content = response.choices[0].message.content
+    ai_data = json.loads(ai_content)
+    
+    return {
+        "guide": ai_data,
+        "attempt_id": f"ai_attempt_{uuid.uuid4().hex[:12]}"
+    }
 
 
 @app.post("/ai/procedures/assess")

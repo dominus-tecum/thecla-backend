@@ -1402,7 +1402,8 @@ def embed_images_directly(text_content, images, exam_title):
 # MAIN UPLOAD SCRIPT
 # ============================
 
-BASE_URL = "https://thecla-backend.onrender.com"
+#BASE_URL = "https://thecla-backend.onrender.com"
+BASE_URL = "https://7c8d-94-207-206-21.ngrok-free.app"
 API_URL = f'{BASE_URL}/exam/'  # Singular endpoint
 
 # Ask user which profession to upload reading materials for

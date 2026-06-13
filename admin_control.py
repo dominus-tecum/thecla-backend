@@ -18,7 +18,7 @@ def sort_exams_by_number(exams):
 
 API_URL = 'https://thecla-backend.onrender.com'
 
-#API_URL = 'https://53a15f117877.ngrok-free.app'
+#API_URL = 'https://7c8d-94-207-206-21.ngrok-free.app'
 
 def list_exams_menu():
     """Sub-menu for listing exams by profession"""
