@@ -14,6 +14,24 @@ import json
 from datetime import datetime
 import zipfile
 
+def extract_chapter_number(filename):
+    """Extract chapter number from filename for sorting"""
+    # Match patterns like "Chapter 1", "Chapter 10", "Chapter 2"
+    match = re.search(r'Chapter\s+(\d+)', filename, re.IGNORECASE)
+    if match:
+        return int(match.group(1))
+    
+    # Also match patterns like "1. ", "01. ", "1-", etc.
+    match = re.search(r'^(\d+)[\.\s-]', filename)
+    if match:
+        return int(match.group(1))
+    
+    return 999  # Put files without chapter number at the end
+
+def sort_files_by_chapter(files):
+    """Sort files by chapter number naturally"""
+    return sorted(files, key=extract_chapter_number)
+
 # Try to import optional dependencies with fallbacks
 try:
     import fitz  # PyMuPDF
@@ -1006,6 +1024,7 @@ if __name__ == "__main__":
     pdf_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.pdf')]
     
     all_files = docx_files + pdf_files
+    all_files = sort_files_by_chapter(all_files)
     
     if not all_files:
         print(f"❌ No document files found in: {folder_path}")
