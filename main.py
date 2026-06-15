@@ -5849,9 +5849,9 @@ def check_daily_limit(
         # NO CUSTOM LIMITS → Use defaults based on user tier
         if is_currently_premium:
             # PREMIUM defaults: 5 simulations, 5 procedures, 75 quiz questions
-            DEFAULT_LIMITS = {'simulation': 5, 'procedure': 5, 'quiz_question': 75}
+            DEFAULT_LIMITS = {'simulation': 30, 'procedure': 30, 'quiz_question': 200}
             limit_type = "PREMIUM_DEFAULT"
-            print(f"🔍 [CHECK-LIMIT] Premium user → Default limits: 5/5/75")
+            print(f"🔍 [CHECK-LIMIT] Premium user → Default limits: 30/30/200")
         else:
             # BASIC defaults: 1 simulation, 1 procedure, 15 quiz questions
             DEFAULT_LIMITS = {'simulation': 1, 'procedure': 1, 'quiz_question': 15}
