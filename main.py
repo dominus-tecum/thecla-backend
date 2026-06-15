@@ -5463,15 +5463,15 @@ Make the options challenging and clinically realistic."""
 
         
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are an expert medical educator creating exam-style procedure questions. Options must be challenging and plausible."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=2000,
-            temperature=0.7,
-            response_format={"type": "json_object"}
-        )
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": "You are an expert medical educator creating exam-style procedure questions in JSON format. Your responses must be valid JSON objects. Options must be challenging and plausible."},
+        {"role": "user", "content": prompt}
+    ],
+    max_tokens=2000,
+    temperature=0.7,
+    response_format={"type": "json_object"}
+)
         
         ai_content = response.choices[0].message.content
         # ========== ADD THIS DEBUG ==========
