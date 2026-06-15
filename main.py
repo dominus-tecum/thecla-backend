@@ -2322,7 +2322,7 @@ async def generate_ai_hybrid_quiz(
         print("🔄 Falling back to regular intelligent quiz...")
         
         # Reuse your existing endpoint logic
-        from fastapi import HTTPException
+        #from fastapi import HTTPException
         
         # Call your original function (simplified fallback)
         # In production, you might want to redirect to the original endpoint
