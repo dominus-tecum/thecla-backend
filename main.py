@@ -1,6 +1,7 @@
 # At the VERY TOP of main.py (after imports but before app = FastAPI())
 import os
 from dotenv import load_dotenv
+import httpx
 
 # Load environment variables FIRST
 load_dotenv()
@@ -51,7 +52,9 @@ openai_client = None
 if OPENAI_AVAILABLE and config.OPENAI_API_KEY and config.OPENAI_API_KEY != "sk-your-actual-openai-api-key-here":
     try:
         from openai import OpenAI
-        openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
+        
+        http_client = httpx.Client()
+        openai_client = OpenAI(api_key=config.OPENAI_API_KEY, http_client=http_client)
         print(f"✅ OpenAI client initialized with model: {config.OPENAI_MODEL}")
     except Exception as e:
         print(f"❌ Failed to initialize OpenAI client: {e}")
@@ -1822,6 +1825,8 @@ class AIQuestionEngine:
 # Add at the top of your file or class:
 # from openai import OpenAI
 # client = OpenAI(api_key=config.OPENAI_API_KEY)
+
+
 
                     # Call OpenAI with timeout
             try:
@@ -5388,7 +5393,9 @@ async def generate_procedure(request: dict = Body(...)):
     try:
         from openai import OpenAI
         
-        client = OpenAI(api_key=config.OPENAI_API_KEY)
+        
+        http_client = httpx.Client()
+        client = OpenAI(api_key=config.OPENAI_API_KEY, http_client=http_client)
         
         prompt = f"""You are creating a PROCEDURE EXAM for {user_profession}.
 
@@ -5605,7 +5612,9 @@ async def assess_procedure_step(
         # ✅ NEW OPENAI 1.0+ SYNTAX
         from openai import OpenAI
         
-        client = OpenAI(api_key=config.OPENAI_API_KEY)
+        
+        http_client = httpx.Client()
+        client = OpenAI(api_key=config.OPENAI_API_KEY, http_client=http_client)
         
         response = client.chat.completions.create(
             model=config.OPENAI_MODEL or "gpt-4o-mini",
