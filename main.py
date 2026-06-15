@@ -5480,7 +5480,7 @@ Make the options challenging and clinically realistic."""
         print("="*60)
         print(ai_content)
         print("="*60)
-        print(f"\n🔍 RAW AI RESPONSE (first 1000 chars):")
+        print("\n🔍 RAW AI RESPONSE (first 1000 chars):")
         print(ai_content[:1000])
         print("\n🔍 END RAW RESPONSE")
         # ========== END DEBUG ==========
