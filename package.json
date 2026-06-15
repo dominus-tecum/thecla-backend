@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "react-native-gesture-handler": "^3.0.1",
+    "react-native-reanimated": "^4.4.1",
     "react-native-webview": "^13.16.0"
   }
 }

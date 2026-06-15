@@ -5367,61 +5367,212 @@ def assess_simulation_decision(
 
 # Add to your FastAPI app
 
+
 @app.post("/ai/procedures/generate")
 async def generate_procedure(request: dict = Body(...)):
-    specialty = request.get("specialty", "emergency")
+    # ========== DEBUG: CHECK API KEY ==========
+    print("\n🔍 API KEY DEBUG:")
+    print(f"   OPENAI_API_KEY from config: {config.OPENAI_API_KEY[:20] if config.OPENAI_API_KEY else 'NOT SET'}...")
+    print(f"   OPENAI_AVAILABLE: {OPENAI_AVAILABLE}")
+    print(f"   openai_client: {openai_client is not None}")
+    # ========== END DEBUG ==========
+
+    specialty = request.get("specialty", "general_practice")
     difficulty = request.get("difficulty", "advanced")
     procedure_name = request.get("procedure_title") or request.get("procedure_name") or f"{specialty} procedure"
+    user_profession = request.get("user_profession", "clinician")
     
-    print(f"🎯 Generating procedure: {procedure_name}")
+    print(f"🎯 Generating procedure exam for: {procedure_name}")
+    print(f"   User profession: {user_profession}")
     
-    from openai import OpenAI
-    
-    client = OpenAI(api_key=config.OPENAI_API_KEY)
-    
-    prompt = f"""Generate a procedure guide for: {procedure_name}
+    try:
+        from openai import OpenAI
+        
+        client = OpenAI(api_key=config.OPENAI_API_KEY)
+        
+        prompt = f"""You are creating a PROCEDURE EXAM for {user_profession}.
 
-Return EXACT JSON format:
+Generate a complete procedure exam for: {procedure_name}
+
+Follow this EXACT pattern using REAL medical terms:
+
+EXAMPLE for "Joint Aspiration":
 {{
-    "title": "{procedure_name}",
-    "learningObjectives": ["Objective 1", "Objective 2", "Objective 3"],
-    "steps": [
+    "title": "Joint Aspiration",
+    "case_presentation": "A 65-year-old with knee swelling and pain. You decide to perform diagnostic arthrocentesis.",
+    "questions": [
         {{
-            "title": "Step 1: Action",
-            "description": "Description",
-            "options": ["Option 1", "Option 2", "Option 3"],
-            "correctOptionIndex": 0,
-            "timeEstimate": 120
+            "type": "anatomy",
+            "question": "What is the preferred needle insertion point for knee aspiration?",
+            "options": [
+                "Lateral border of the patella",
+                "Medial border of the patella",
+                "Superior pole of the patella",
+                "Inferior pole of the patella"
+            ],
+            "correct_index": 0,
+            "rationale": "The lateral suprapatellar approach avoids the fat pad and provides easiest access."
+        }},
+        {{
+            "type": "equipment",
+            "question": "What needle size is appropriate for knee aspiration?",
+            "options": [
+                "18-gauge, 1.5 inch",
+                "20-gauge, 1.5 inch",
+                "22-gauge, 1.5 inch",
+                "25-gauge, 1 inch"
+            ],
+            "correct_index": 1,
+            "rationale": "20-gauge provides adequate flow for diagnostic fluid while minimizing trauma."
+        }},
+        {{
+            "type": "technique",
+            "question": "How much synovial fluid is typically obtained from a swollen knee?",
+            "options": [
+                "1-5 mL",
+                "10-30 mL",
+                "40-60 mL",
+                "75-100 mL"
+            ],
+            "correct_index": 1,
+            "rationale": "10-30 mL is typical for a moderately swollen knee with effusion."
+        }},
+        {{
+            "type": "complications",
+            "question": "What is the most common complication of knee arthrocentesis?",
+            "options": [
+                "Septic arthritis",
+                "Hemarthrosis",
+                "Post-procedure pain",
+                "Nerve damage"
+            ],
+            "correct_index": 2,
+            "rationale": "Transient post-procedure pain is most common; serious complications are rare."
         }}
-    ],
-    "equipment": ["Equipment 1"],
-    "complications": ["Complication 1"],
-    "safetyNotes": ["Safety note 1"],
-    "indications": ["Indication 1"],
-    "contraindications": ["Contraindication 1"]
+    ]
 }}
 
-Generate 4 steps."""
-    
-    # NO RETRIES - single attempt
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",  # TEXT MODEL - NOT REALTIME
-        messages=[
-            {"role": "system", "content": "Return valid JSON only."},
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=2000,
-        temperature=0.7,
-        response_format={"type": "json_object"}
-    )
-    
-    ai_content = response.choices[0].message.content
-    ai_data = json.loads(ai_content)
-    
-    return {
-        "guide": ai_data,
-        "attempt_id": f"ai_attempt_{uuid.uuid4().hex[:12]}"
-    }
+Now generate a procedure exam for: {procedure_name}
+Use REAL medical terms specific to {procedure_name}. Do NOT use generic placeholders.
+Make the options challenging and clinically realistic."""
+
+
+
+
+
+
+        
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an expert medical educator creating exam-style procedure questions. Options must be challenging and plausible."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=2000,
+            temperature=0.7,
+            response_format={"type": "json_object"}
+        )
+        
+        ai_content = response.choices[0].message.content
+        # ========== ADD THIS DEBUG ==========
+        print("\n" + "="*60)
+        print("🔍 RAW AI RESPONSE:")
+        print("="*60)
+        print(ai_content)
+        print("="*60)
+        print(f"\n🔍 RAW AI RESPONSE (first 1000 chars):")
+        print(ai_content[:1000])
+        print("\n🔍 END RAW RESPONSE")
+        # ========== END DEBUG ==========
+
+        ai_data = json.loads(ai_content)
+
+                # ========== ADD VALIDATION ==========
+        if "questions" not in ai_data or not ai_data["questions"]:
+            print("⚠️ WARNING: AI returned no questions! Using fallback.")
+            ai_data["questions"] = [
+                {
+                    "type": "anatomy",
+                    "question": f"Identify the correct anatomical landmark for {procedure_name}.",
+                    "options": ["Landmark A", "Landmark B (correct)", "Landmark C", "Landmark D"],
+                    "correct_index": 1,
+                    "rationale": "Landmark B is correct because it provides the safest access."
+                },
+                {
+                    "type": "equipment",
+                    "question": f"What equipment is required for {procedure_name}?",
+                    "options": ["Equipment A", "Equipment B (correct)", "Equipment C", "Equipment D"],
+                    "correct_index": 1,
+                    "rationale": "Equipment B is the standard choice for this procedure."
+                },
+                {
+                    "type": "technique",
+                    "question": f"What is the correct technique for {procedure_name}?",
+                    "options": ["Technique A", "Technique B (correct)", "Technique C", "Technique D"],
+                    "correct_index": 1,
+                    "rationale": "Technique B follows established clinical guidelines."
+                },
+                {
+                    "type": "complications",
+                    "question": f"What is the most specific complication of {procedure_name}?",
+                    "options": ["Complication A", "Complication B (correct)", "Complication C", "Complication D"],
+                    "correct_index": 1,
+                    "rationale": "Complication B is a known specific risk of this procedure."
+                }
+            ]
+        # ========== END VALIDATION ==========
+
+
+
+
+
+
+
+        
+        return {
+            "guide": ai_data,
+            "attempt_id": f"proc_exam_{uuid.uuid4().hex[:12]}"
+        }
+        
+    except Exception as e:
+        print(f"OpenAI error: {e}")
+        return {
+            "guide": {
+                "title": procedure_name,
+                "case_presentation": f"Clinical case requiring {procedure_name}. Assessment and management needed.",
+                "questions": [
+                    {
+                        "type": "anatomy",
+                        "question": f"Identify the correct anatomical landmark for {procedure_name}.",
+                        "options": ["Landmark A", "Landmark B (correct)", "Landmark C", "Landmark D"],
+                        "correct_index": 1,
+                        "rationale": "Landmark B is correct because..."
+                    },
+                    {
+                        "type": "equipment",
+                        "question": f"What equipment is required for {procedure_name}?",
+                        "options": ["Equipment A", "Equipment B (correct)", "Equipment C", "Equipment D"],
+                        "correct_index": 1,
+                        "rationale": "Equipment B is standard for this procedure."
+                    },
+                    {
+                        "type": "technique",
+                        "question": f"What is the correct technique for {procedure_name}?",
+                        "options": ["Technique A", "Technique B (correct)", "Technique C", "Technique D"],
+                        "correct_index": 1,
+                        "rationale": "Technique B follows established guidelines."
+                    },
+                    {
+                        "type": "complications",
+                        "question": f"What is the most specific complication of {procedure_name}?",
+                        "options": ["Complication A", "Complication B (correct)", "Complication C", "Complication D"],
+                        "correct_index": 1,
+                        "rationale": "Complication B is a known specific risk."
+                    }
+                ]
+            },
+            "attempt_id": f"fallback_{uuid.uuid4().hex[:12]}"
+        }
 
 
 @app.post("/ai/procedures/assess")
