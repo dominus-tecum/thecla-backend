@@ -864,11 +864,11 @@ def add_rationale_to_existing_questions(db: Session):
     return updated_count
 
 # Initialize database with rationale data
-db = SessionLocal()
-try:
-    add_rationale_to_existing_questions(db)
-finally:
-    db.close()
+#db = SessionLocal()
+#try:
+#    add_rationale_to_existing_questions(db)
+#finally:
+#    db.close()
 
 
 # =============================================================================
