@@ -118,6 +118,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 app = FastAPI()
 
+
+    
+
 # ✅ ADD ROOT ENDPOINT HERE
 @app.get("/")
 def read_root():
@@ -252,6 +255,7 @@ class Exam(Base):
     subtopic = Column(String, nullable=True)     # "antibiotics", "cardiac"  
     difficulty = Column(String, nullable=True)   # "basic", "intermediate", "advanced"
     concepts = Column(JSON, nullable=True)       # ["mechanism_of_action", "side_effects"]
+    step = Column(String, nullable=True)
     
     
 class Question(Base):
@@ -2331,10 +2335,6 @@ async def generate_ai_hybrid_quiz(
             detail=f"AI enhancement failed: {str(e)}. Please try the regular Smart Quiz."
         )
 
-
-
-
-
 @app.get("/quiz/ai-hybrid/{exam_id}")
 def get_ai_hybrid_quiz(
     exam_id: str,
@@ -2665,52 +2665,118 @@ def delete_study_notes_by_discipline(
 # =============================================================================
 
 
-@app.get("/exams/usmle")
+@app.get("/exams/usmle/list")
 def list_usmle_exams(
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    step: Optional[str] = Query(None, description="Filter by USMLE step (1, 2, or 3)"),
+    db: Session = Depends(get_db)  # ← No auth required
 ):
-    """List all released USMLE exams for the current user"""
-    user_discipline_id = get_user_discipline_id(current_user)
+    """List all released USMLE exams - optionally filtered by step"""
+    print(f"🔍 USMLE LIST CALLED - Step filter: {step}")
     
-    exams = db.query(Exam).filter(
+    # Build query
+    query = db.query(Exam).filter(
         Exam.source == "usmle",
-        Exam.discipline_id == user_discipline_id,  # Or could be fixed to "usmle"
         Exam.is_released == True
-    ).all()
+    )
     
-    return [
-        {
+    # Apply step filter if provided
+    if step:
+        query = query.filter(Exam.step == step)
+    
+    exams = query.all()
+    
+    print(f"✅ Found {len(exams)} USMLE exams" + (f" for Step {step}" if step else ""))
+    
+    result = []
+    for exam in exams:
+        question_count = db.query(Question).filter(Question.exam_id == exam.id).count()
+        result.append({
             "id": exam.id,
             "title": exam.title,
             "discipline_id": exam.discipline_id,
             "time_limit": exam.time_limit,
             "source": exam.source,
-            "step": getattr(exam, 'step', '1')  # Add if exists
+            "step": getattr(exam, 'step', '1'),
+            "question_count": question_count
+        })
+    
+    return result
+
+@app.post("/exams/usmle")
+def create_usmle_exam(
+    exam_data: dict = Body(...),
+    db: Session = Depends(get_db)
+):
+    """Create a new USMLE exam"""
+    try:
+        exam_id = exam_data.get("id")
+        title = exam_data.get("title")
+        step = exam_data.get("step", "1")  # ← ADD THIS
+        time_limit = exam_data.get("time_limit", 60)
+        questions_data = exam_data.get("questions", [])
+        
+        # Check if exam already exists
+        existing_exam = db.query(Exam).filter(Exam.id == exam_id).first()
+        if existing_exam:
+            raise HTTPException(status_code=400, detail=f"USMLE exam {exam_id} already exists")
+        
+        # Create exam WITH step
+        exam = Exam(
+            id=exam_id,
+            title=title,
+            discipline_id="usmle",
+            time_limit=time_limit,
+            source="usmle",
+            is_released=True,
+            release_date=datetime.utcnow(),
+            step=step  # ← ADD THIS
+        )
+        db.add(exam)
+        db.commit()
+        
+        # Create questions
+        for q_data in questions_data:
+            question = Question(
+                id=q_data.get("id", str(uuid.uuid4())),
+                exam_id=exam_id,
+                text=q_data.get("text", ""),
+                options=q_data.get("options", []),
+                correct_idx=q_data.get("correct_idx", -1),
+                rationale=q_data.get("rationale"),
+                topic=q_data.get("topic", "general_medicine"),
+                difficulty=q_data.get("difficulty", "advanced")
+            )
+            db.add(question)
+        
+        db.commit()
+        
+        return {
+            "msg": "USMLE exam created successfully",
+            "exam_id": exam_id,
+            "title": title,
+            "step": step,  # ← ADD THIS
+            "questions_count": len(questions_data)
         }
-        for exam in exams
-    ]
-
-
-
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creating USMLE exam: {str(e)}")
 
 @app.get("/exams/usmle/{exam_id}")
 def get_usmle_exam_with_questions(
     exam_id: str, 
-    current_user: User = Depends(get_current_active_user),
+    
     db: Session = Depends(get_db)
 ):
-    user_discipline_id = get_user_discipline_id(current_user)
-    
+    """Get a specific USMLE exam with questions"""
     exam = db.query(Exam).filter(
         Exam.id == exam_id, 
         Exam.source == "usmle",
-        Exam.discipline_id == user_discipline_id,
         Exam.is_released == True
     ).first()
     
     if not exam:
-        raise HTTPException(status_code=404, detail="USMLE exam not found or access denied")
+        raise HTTPException(status_code=404, detail="USMLE exam not found")
     
     questions = db.query(Question).filter(Question.exam_id == exam_id).all()
     return {
@@ -2726,134 +2792,18 @@ def get_usmle_exam_with_questions(
                 "options": q.options,
                 "correct_idx": q.correct_idx,
                 "rationale": q.rationale,
-                "topic": q.topic,  # Add if exists
+                "topic": q.topic,
                 "difficulty": getattr(q, 'difficulty', 'advanced')
             } for q in questions
         ]
     }
-
-
-
-@app.post("/exams/usmle/submit")
-def submit_usmle_exam_results(
-    exam_data: dict = Body(...),
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """Submit USMLE exam results - extends regular exam submission"""
-    try:
-        # Get exam details
-        exam = db.query(Exam).filter(Exam.id == exam_data.get("exam_id")).first()
-        if not exam:
-            raise HTTPException(status_code=404, detail="USMLE exam not found")
-        
-        # Extract data
-        score = exam_data.get("score", 0)
-        total_questions = exam_data.get("total_questions", 0)
-        step = exam_data.get("step", getattr(exam, 'step', '1'))
-        
-        # Calculate USMLE 3-digit score
-        three_digit_score = 140 + (score * 2.6)
-        
-        # Store in user_activity
-        activity = log_activity(db, current_user.id, "usmle_exam_completed", {
-            "exam_id": exam_data.get("exam_id"),
-            "exam_title": exam.title,
-            "step": step,
-            "score": score,
-            "three_digit_score": three_digit_score,
-            "total_questions": total_questions,
-            "percentage": score,
-            "passed": score >= 75,  # USMLE passing threshold
-            "timestamp": datetime.utcnow().isoformat(),
-            "user_answers": exam_data.get("user_answers", {}),
-            "blocks_completed": exam_data.get("blocks_completed", 1),
-            "time_spent": exam_data.get("time_spent", 0)
-        })
-        
-        return {
-            "message": "USMLE exam results saved successfully",
-            "activity_id": activity.id,
-            "score": score,
-            "three_digit_score": three_digit_score,
-            "step": step
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving USMLE results: {str(e)}")
-
-
-
-
-@app.post("/exams/usmle")
-def create_usmle_exam(
-    exam_data: dict = Body(...),
-    db: Session = Depends(get_db)
-):
-    """Create a new USMLE exam - matches your plural exam pattern"""
-    try:
-        exam_id = exam_data.get("id")
-        title = exam_data.get("title")
-        step = exam_data.get("step", "1")
-        time_limit = exam_data.get("time_limit", 60)  
-        source = "usmle"  # Fixed for USMLE
-        questions_data = exam_data.get("questions", [])
-        
-        # Check if exam already exists
-        existing_exam = db.query(Exam).filter(Exam.id == exam_id).first()
-        if existing_exam:
-            return {"msg": f"USMLE exam {exam_id} already exists"}
-        
-        # Create exam - follows your plural pattern
-        exam = Exam(
-            id=exam_id,
-            title=title,
-            discipline_id="usmle",  # Fixed discipline
-            time_limit=time_limit,
-            source=source,
-            is_released=False,  # Don't auto-release
-            step=step  # Add step field
-        )
-        db.add(exam)
-        db.commit()
-        
-        # Create questions - with USMLE fields
-        for q_data in questions_data:
-            question = Question(
-                id=q_data.get("id", str(uuid.uuid4())),
-                exam_id=exam_id,
-                text=q_data.get("text", ""),
-                options=q_data.get("options", []),
-                correct_idx=q_data.get("correct_idx", -1),
-                rationale=q_data.get("rationale"),
-                topic=q_data.get("topic", "general_medicine"),  # USMLE topics
-                difficulty=q_data.get("difficulty", "advanced")
-            )
-            db.add(question)
-        
-        db.commit()
-        
-        return {
-            "msg": "USMLE exam created successfully",
-            "exam_id": exam_id,
-            "step": step,
-            "questions_count": len(questions_data),
-            "time_limit_hours": f"{time_limit/60:.1f}"
-        }
-        
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error creating USMLE exam: {str(e)}")
-
-
-
 
 @app.delete("/admin/exams/usmle/{exam_id}")
 def delete_usmle_exam(
     exam_id: str,
     db: Session = Depends(get_db)
 ):
-    """Delete a USMLE exam - matches your delete pattern"""
+    """Delete a USMLE exam"""
     exam = db.query(Exam).filter(
         Exam.id == exam_id,
         Exam.source == "usmle"
@@ -2862,97 +2812,13 @@ def delete_usmle_exam(
     if not exam:
         raise HTTPException(status_code=404, detail="USMLE exam not found")
     
+    # Delete questions first
+    db.query(Question).filter(Question.exam_id == exam_id).delete()
     db.delete(exam)
     db.commit()
     
     return {"msg": f"USMLE exam '{exam.title}' deleted successfully"}
 
-
-
-@app.get("/usmle/results")
-def get_user_usmle_results(
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """Get all USMLE exam results for current user - similar to activity query"""
-    # Get USMLE exam activities
-    activities = db.query(UserActivity).filter(
-        UserActivity.user_id == current_user.id,
-        UserActivity.activity_type == "usmle_exam_completed"
-    ).order_by(UserActivity.created_at.desc()).all()
-    
-    results = []
-    for activity in activities:
-        details = activity.details
-        results.append({
-            "exam_id": details.get("exam_id"),
-            "exam_title": details.get("exam_title", "USMLE Exam"),
-            "step": details.get("step", "1"),
-            "score": details.get("score", 0),
-            "three_digit_score": details.get("three_digit_score", 0),
-            "total_questions": details.get("total_questions", 0),
-            "passed": details.get("passed", False),
-            "completed_at": activity.created_at.isoformat() if activity.created_at else details.get("timestamp"),
-            "user_answers_count": len(details.get("user_answers", {}))
-        })
-    
-    return results
-
-
-@app.get("/usmle/results/{exam_id}/detailed")
-def get_usmle_exam_detailed_review(
-    exam_id: str,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """Get detailed USMLE exam for review - combines exam and results"""
-    # Get the USMLE exam
-    exam = db.query(Exam).filter(
-        Exam.id == exam_id,
-        Exam.source == "usmle"
-    ).first()
-    
-    if not exam:
-        raise HTTPException(status_code=404, detail="USMLE exam not found")
-    
-    # Get questions
-    questions = db.query(Question).filter(Question.exam_id == exam_id).all()
-    
-    # Get user's result
-    activity = db.query(UserActivity).filter(
-        UserActivity.user_id == current_user.id,
-        UserActivity.activity_type == "usmle_exam_completed",
-        UserActivity.details["exam_id"].astext == exam_id
-    ).order_by(UserActivity.created_at.desc()).first()
-    
-    user_answers = activity.details.get("user_answers", {}) if activity else {}
-    
-    return {
-        "exam": {
-            "id": exam.id,
-            "title": exam.title,
-            "step": getattr(exam, 'step', '1'),
-            "time_limit": exam.time_limit
-        },
-        "performance": {
-            "score": activity.details.get("score", 0) if activity else 0,
-            "three_digit_score": activity.details.get("three_digit_score", 0) if activity else 0,
-            "passed": activity.details.get("passed", False) if activity else False
-        },
-        "questions": [
-            {
-                "index": idx,
-                "text": q.text,
-                "options": q.options,
-                "correct_idx": q.correct_idx,
-                "user_answer": user_answers.get(f"q{idx}", -1),
-                "rationale": q.rationale,
-                "topic": q.topic,
-                "difficulty": getattr(q, 'difficulty', 'advanced')
-            }
-            for idx, q in enumerate(questions)
-        ]
-    }
 
 
 
@@ -6393,29 +6259,43 @@ def create_admin_user(
         raise HTTPException(status_code=500, detail=f"Failed to create admin: {str(e)}")
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@app.get("/delete-account")
+def delete_account_page():
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Delete Account - TheclaMed</title>
+        <style>
+            body { font-family: Arial, sans-serif; background-color: #f8f9fa; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+            .container { background: white; max-width: 600px; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
+            h1 { color: #8B4513; font-size: 28px; }
+            p { color: #555; font-size: 16px; line-height: 1.6; }
+            .email-box { background: #f0f0f0; padding: 16px; border-radius: 8px; font-size: 18px; font-weight: bold; color: #8B4513; margin: 20px 0; }
+            .button { display: inline-block; background: #8B4513; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px; margin-top: 10px; }
+            .button:hover { background: #6B3410; }
+            .footer { margin-top: 30px; font-size: 12px; color: #999; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🗑️ Delete Account</h1>
+            <p>To request deletion of your TheclaMed account and all associated data, please send an email to:</p>
+            <div class="email-box">pearlcenter01@gmail.com</div>
+            <p><strong>Subject:</strong> Delete My Account</p>
+            <p><strong>Include:</strong> Your registered email address</p>
+            <a href="mailto:pearlcenter01@gmail.com?subject=Delete%20My%20Account" class="button">📧 Send Deletion Request</a>
+            <p style="margin-top: 20px; font-size: 14px; color: #888;">We will process your request within 7 days.</p>
+            <div class="footer">TheclaMed © 2026</div>
+        </div>
+    </body>
+    </html>
+    """    
 
 
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)           
