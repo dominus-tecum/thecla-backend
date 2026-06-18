@@ -2,6 +2,7 @@
 import os
 from dotenv import load_dotenv
 import httpx
+from fastapi.responses import HTMLResponse
 
 # Load environment variables FIRST
 load_dotenv()
@@ -6259,7 +6260,7 @@ def create_admin_user(
         raise HTTPException(status_code=500, detail=f"Failed to create admin: {str(e)}")
 
 
-@app.get("/delete-account")
+@app.get("/delete-account", response_class=HTMLResponse)
 def delete_account_page():
     return """
     <!DOCTYPE html>
@@ -6292,8 +6293,7 @@ def delete_account_page():
         </div>
     </body>
     </html>
-    """    
-
+    """
 
 
 
